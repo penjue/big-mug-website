@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: big-mug
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 2 --threads 4 --timeout 60 app:app
+    healthCheckPath: /health
+    envVars:
+      - key: BIG_MUG_SECRET_KEY
+        generateValue: true
+      - key: BIG_MUG_ADMIN_USER
+        value: bigmugadmin
+      - key: BIG_MUG_ADMIN_PASSWORD
+        sync: false
+      - key: BIG_MUG_HTTPS
+        value: "1"
+      - key: BIG_MUG_TRUST_PROXY
+        value: "1"
+      - key: BIG_MUG_DB_PATH
+        value: /var/data/big_mug.db
+      - key: FLASK_DEBUG
+        value: "0"
+    disk:
+      name: big-mug-data
+      mountPath: /var/data
+      sizeGB: 1
