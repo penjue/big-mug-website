@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Big Mug Coffee Tour</title>
+  <style>
+    :root{
+      --coffee:#3b2418;
+      --cream:#f4eadf;
+      --gold:#c99853;
+      --dark:#1d1713;
+      --soft:#fffaf5;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--soft);
+      color:var(--dark);
+      line-height:1.6;
+    }
+
+    header{
+      background:linear-gradient(rgba(29,23,19,.72),rgba(29,23,19,.72)),
+      url('https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1600&q=80') center/cover;
+      color:white;
+      min-height:85vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    nav{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:22px 7%;
+      background:rgba(0,0,0,.18);
+    }
+
+    .brand{
+      font-size:1.7rem;
+      font-weight:700;
+      letter-spacing:.8px;
+    }
+
+    nav a{
+      color:white;
+      text-decoration:none;
+      margin-left:20px;
+      font-weight:600;
+    }
+
+    .hero{
+      flex:1;
+      display:flex;
+      align-items:center;
+      padding:50px 7%;
+    }
+
+    .hero-content{
+      max-width:760px;
+    }
+
+    .eyebrow{
+      color:#f2cf92;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:2px;
+      font-size:.9rem;
+    }
+
+    h1{
+      font-size:clamp(2.5rem,7vw,5.2rem);
+      line-height:1.05;
+      margin:14px 0 22px;
+    }
+
+    .hero p{
+      font-size:1.15rem;
+      max-width:680px;
+    }
+
+    .btn{
+      display:inline-block;
+      margin-top:20px;
+      background:var(--gold);
+      color:#1b120d;
+      padding:14px 24px;
+      border-radius:999px;
+      text-decoration:none;
+      font-weight:700;
+      border:none;
+      cursor:pointer;
+    }
+
+    section{
+      padding:70px 7%;
+    }
+
+    .section-title{
+      text-align:center;
+      max-width:800px;
+      margin:0 auto 40px;
+    }
+
+    .section-title h2{
+      font-size:2.2rem;
+      margin-bottom:12px;
+      color:var(--coffee);
+    }
+
+    .intro{
+      background:var(--cream);
+    }
+
+    .intro-text{
+      max-width:900px;
+      margin:auto;
+      font-size:1.08rem;
+      text-align:center;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:24px;
+    }
+
+    .card{
+      background:white;
+      border-radius:20px;
+      padding:26px;
+      box-shadow:0 12px 30px rgba(0,0,0,.08);
+    }
+
+    .card h3{
+      margin-top:0;
+      color:var(--coffee);
+    }
+
+    .price{
+      color:var(--gold);
+      font-weight:700;
+      font-size:1.15rem;
+    }
+
+    .experience{
+      background:#fffdf9;
+    }
+
+    .story{
+      background:var(--coffee);
+      color:white;
+    }
+
+    .story h2{
+      color:white;
+    }
+
+    .story-wrap{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:36px;
+      align-items:center;
+    }
+
+    .story-image{
+      min-height:360px;
+      border-radius:24px;
+      background:url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80') center/cover;
+    }
+
+    form{
+      max-width:760px;
+      margin:auto;
+      background:white;
+      padding:30px;
+      border-radius:22px;
+      box-shadow:0 12px 30px rgba(0,0,0,.08);
+    }
+
+    input,select,textarea{
+      width:100%;
+      padding:13px 14px;
+      margin:8px 0 16px;
+      border:1px solid #d7cec5;
+      border-radius:10px;
+      font-size:1rem;
+    }
+
+    textarea{min-height:120px}
+
+    label{
+      font-weight:700;
+      color:var(--coffee);
+    }
+
+    .flash{
+      max-width:760px;
+      margin:0 auto 20px;
+      padding:14px 18px;
+      border-radius:10px;
+      background:#f5e6cc;
+    }
+
+    footer{
+      background:#17120f;
+      color:#e8ded7;
+      padding:35px 7%;
+      text-align:center;
+    }
+
+    @media(max-width:800px){
+      nav{
+        align-items:flex-start;
+        gap:15px;
+      }
+
+      nav .links{
+        display:none;
+      }
+
+      .story-wrap{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        padding-top:25px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <div class="brand">BIG MUG</div>
+    <div class="links">
+      <a href="#about">About</a>
+      <a href="#experiences">Experiences</a>
+      <a href="#book">Book</a>
+      <a href="/login">Admin</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-content">
+      <div class="eyebrow">Experience the journey behind every cup</div>
+      <h1>Discover coffee beyond the mug.</h1>
+      <p>
+        Big Mug invites you into a deeper coffee experience — from the farm,
+        the people and the process, to the aroma, flavour and story waiting in every cup.
+      </p>
+      <a class="btn" href="#book">Book Your Experience</a>
+    </div>
+  </div>
+</header>
+
+<section class="intro" id="about">
+  <div class="section-title">
+    <h2>Welcome to Big Mug</h2>
+  </div>
+
+  <div class="intro-text">
+    <p>
+      Big Mug is more than a coffee tour. It is an invitation to slow down,
+      explore, ask questions and experience coffee from a completely different point of view.
+    </p>
+
+    <p>
+      Follow the journey from growing and harvesting to processing, roasting and brewing.
+      Meet the stories behind the beans, understand what shapes flavour, and discover why
+      every cup has a character of its own.
+    </p>
+
+    <p>
+      Whether you are a coffee lover, a curious traveller, a couple looking for a unique
+      experience, or a group searching for something memorable, Big Mug is designed to leave
+      you with more than information — it leaves you with a story to remember.
+    </p>
+  </div>
+</section>
+
+<section class="experience" id="experiences">
+  <div class="section-title">
+    <h2>Big Mug Experiences</h2>
+    <p>Choose an experience and make your coffee journey your own.</p>
+  </div>
+
+  <div class="grid">
+    {% for experience in experiences %}
+    <div class="card">
+      <h3>{{ experience["name"] }}</h3>
+      <div class="price">{{ experience["price"] }}</div>
+      <p><strong>Duration:</strong> {{ experience["duration"] }}</p>
+      <p>{{ experience["description"] }}</p>
+      <a class="btn" href="#book">Choose this experience</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="story">
+  <div class="story-wrap">
+    <div>
+      <h2>The story behind the flavour</h2>
+      <p>
+        Coffee changes long before it reaches your cup. Altitude, soil, variety,
+        rainfall, harvesting, fermentation, drying and roasting all influence the final experience.
+      </p>
+      <p>
+        At Big Mug, we make that journey visible. You will learn how small choices along the chain
+        create sweetness, acidity, body, aroma and balance.
+      </p>
+      <p>
+        The goal is simple: after your visit, you should never look at a cup of coffee in quite
+        the same way again.
+      </p>
+    </div>
+
+    <div class="story-image"></div>
+  </div>
+</section>
+
+<section id="book">
+  <div class="section-title">
+    <h2>Book Your Big Mug Experience</h2>
+    <p>Send us your preferred date and experience. We will contact you to confirm availability.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" action="/book">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <label>Your name</label>
+    <input type="text" name="name" required>
+
+    <label>Email address</label>
+    <input type="email" name="email" required>
+
+    <label>Phone number</label>
+    <input type="text" name="phone">
+
+    <label>Choose an experience</label>
+    <select name="experience" required>
+      <option value="">Select an experience</option>
+      {% for experience in experiences %}
+      <option value="{{ experience['name'] }}">{{ experience["name"] }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Preferred date</label>
+    <input type="date" name="booking_date" required>
+
+    <label>Number of guests</label>
+    <input type="number" name="guests" min="1" max="100" value="1" required>
+
+    <label>Anything you would like us to know?</label>
+    <textarea name="notes" placeholder="Tell us about your group, celebration, special request or anything else."></textarea>
+
+    <button class="btn" type="submit">Send Booking Request</button>
+  </form>
+</section>
+
+<footer>
+  <p><strong>Big Mug Coffee Tour</strong></p>
+  <p>Discover the journey. Taste the story. Remember the experience.</p>
+</footer>
+
+</body>
+</html>
