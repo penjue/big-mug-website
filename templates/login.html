@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | Big Mug</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        linear-gradient(rgba(25, 16, 11, 0.88), rgba(25, 16, 11, 0.92)),
+        #3b2418;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 430px;
+      background: #fffaf5;
+      color: #1d1713;
+      padding: 38px 30px;
+      border-radius: 22px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    .brand {
+      text-align: center;
+      color: #3b2418;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #3b2418;
+      margin: 12px 0 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #6d5a50;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      color: #3b2418;
+      margin-bottom: 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 18px;
+      border: 1px solid #d9cec5;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    input:focus {
+      outline: 2px solid #c99853;
+      border-color: transparent;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      background: #c99853;
+      color: #1d1713;
+      padding: 14px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .flash {
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      border-radius: 10px;
+      background: #f3dfcf;
+      color: #6c291d;
+    }
+
+    .back {
+      display: block;
+      text-align: center;
+      margin-top: 22px;
+      color: #6a4935;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .secure {
+      text-align: center;
+      font-size: .82rem;
+      color: #89776c;
+      margin-top: 18px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-box">
+
+    <div class="brand">BIG MUG</div>
+
+    <h1>Admin Login</h1>
+
+    <p class="subtitle">
+      Management access for Big Mug Coffee Tour
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/login">
+
+      <input
+        type="hidden"
+        name="_csrf_token"
+        value="{{ csrf_token() }}"
+      >
+
+      <label for="username">Username</label>
+
+      <input
+        id="username"
+        type="text"
+        name="username"
+        autocomplete="username"
+        required
+      >
+
+      <label for="password">Password</label>
+
+      <input
+        id="password"
+        type="password"
+        name="password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit">
+        Sign In
+      </button>
+
+    </form>
+
+    <a class="back" href="/">
+      ← Return to Big Mug
+    </a>
+
+    <div class="secure">
+      Authorized access only
+    </div>
+
+  </div>
+
+</body>
+</html>
