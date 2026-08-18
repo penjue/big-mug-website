@@ -18,10 +18,10 @@ services:
       - key: BIG_MUG_TRUST_PROXY
         value: "1"
       - key: BIG_MUG_DB_PATH
-        value: /var/data/big_mug.db
+        value: /opt/render/project/src/data/big_mug.db
       - key: FLASK_DEBUG
         value: "0"
     disk:
       name: big-mug-data
-      mountPath: /var/data
+      mountPath: /opt/render/project/src/data
       sizeGB: 1
