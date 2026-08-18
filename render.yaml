@@ -1,7 +1,8 @@
 services:
   - type: web
     name: big-mug
-    runtime: python
+    runtime: python  
+    plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --workers 2 --threads 4 --timeout 60 app:app
     healthCheckPath: /health
