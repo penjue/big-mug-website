@@ -276,7 +276,7 @@ else:
         "success"
     )
 
-    return redirect(url_for("home") + "#book")
+        return redirect(url_for("home") + "#book")
 @app.route("/login", methods=["GET","POST"])
 def login():
     key = client_key()
