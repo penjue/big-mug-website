@@ -557,7 +557,7 @@
 
     <h3>Add Product</h3>
 
-    <form method="POST" action="/admin/product/add">
+    <form method="POST" action="/admin/product/add" enctype="multipart/form-data">
       <input
         type="hidden"
         name="_csrf_token"
@@ -579,7 +579,10 @@
           <label>Origin</label>
           <input type="text" name="origin">
         </div>
-
+<div>
+  <label>Product photo</label>
+  <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+</div>
         <div>
           <label>Stock status</label>
           <select name="stock">
