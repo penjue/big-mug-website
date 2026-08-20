@@ -1,7 +1,8 @@
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, send_file
-import sqlite3, os, secrets, time, tempfile
+import sqlite3, os, secrets, time, tempfile, smtplib
 from datetime import timedelta
+from email.message import EmailMessage
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
@@ -24,6 +25,35 @@ if os.environ.get("BIG_MUG_TRUST_PROXY", "0") == "1":
 LOGIN_ATTEMPTS = {}
 LOGIN_WINDOW = 15 * 60
 LOGIN_LIMIT = 5
+
+def send_booking_email(to_email, subject, message):
+    smtp_host = os.environ.get("BIG_MUG_SMTP_HOST")
+    smtp_port = int(os.environ.get("BIG_MUG_SMTP_PORT", "587"))
+    smtp_user = os.environ.get("BIG_MUG_SMTP_USER")
+    smtp_password = os.environ.get("BIG_MUG_SMTP_PASSWORD")
+    from_email = os.environ.get("BIG_MUG_FROM_EMAIL", smtp_user)
+
+    if not all([smtp_host, smtp_user, smtp_password, from_email]):
+        print("Email not sent: SMTP settings are incomplete.")
+        return False
+
+    try:
+        email = EmailMessage()
+        email["Subject"] = subject
+        email["From"] = from_email
+        email["To"] = to_email
+        email.set_content(message)
+
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(email)
+
+        return True
+
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        return False
 
 def db():
     conn = sqlite3.connect(DB)
@@ -193,15 +223,52 @@ def book():
         flash("Please choose a currently available experience.", "error")
         return redirect(url_for("home") + "#book")
 
-    conn.execute(
-        """INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes)
-           VALUES(?,?,?,?,?,?,?)""",
-        (name,email,phone,experience,booking_date,guests_i,notes)
-    )
-    conn.commit()
-    conn.close()
-    flash("Thank you. Your booking request has been received.", "success")
-    return redirect(url_for("home") + "#book")
+    cursor = conn.execute(
+    """INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes)
+       VALUES(?,?,?,?,?,?,?)""",
+    (name,email,phone,experience,booking_date,guests_i,notes)
+)
+
+booking_id = cursor.lastrowid
+booking_ref = f"BM-{booking_id:06d}"
+
+conn.commit()
+conn.close()
+
+email_message = f"""Hello {name},
+
+Thank you for choosing Big Mug Coffee Tour.
+
+We have received your booking request.
+
+Booking Reference: {booking_ref}
+Experience: {experience}
+Preferred Date: {booking_date}
+Number of Guests: {guests_i}
+Status: Pending Confirmation
+
+Please keep your booking reference for any future communication with us.
+
+We will contact you again once your booking has been confirmed.
+
+Big Mug Coffee Tour
+Discover the journey. Taste the story. Remember the experience.
+"""
+
+send_booking_email(
+    email,
+    f"Big Mug Booking Received - {booking_ref}",
+    email_message
+)
+
+flash(
+    f"Thank you. Your booking request has been received. "
+    f"Your booking reference is {booking_ref}. "
+    "Please check your email.",
+    "success"
+)
+
+return redirect(url_for("home") + "#book")
 
 @app.route("/login", methods=["GET","POST"])
 def login():
