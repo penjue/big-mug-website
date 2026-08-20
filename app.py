@@ -1,15 +1,23 @@
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, send_file, send_from_directory
 import sqlite3, os, secrets, time, tempfile, smtplib
 from datetime import timedelta
 from email.message import EmailMessage
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB = os.environ.get("BIG_MUG_DB_PATH", os.path.join(BASE_DIR, "big_mug.db"))
+PRODUCT_IMAGE_DIR = os.environ.get(
+    "BIG_MUG_PRODUCT_IMAGE_DIR",
+    "/var/data/product_images"
+)
 
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+
+os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
 app = Flask(__name__)
 app.secret_key = os.environ.get("BIG_MUG_SECRET_KEY") or secrets.token_hex(32)
 app.config.update(
@@ -124,6 +132,15 @@ def init_db():
                 ("Private Big Mug Experience", "Custom", "Flexible",
                  "A tailored experience for couples, families, groups or corporate guests.")
             ]
+        )    
+        product_columns = {
+        row["name"]
+        for row in conn.execute("PRAGMA table_info(products)").fetchall()
+    }
+
+    if "image_filename" not in product_columns:
+        conn.execute(
+            "ALTER TABLE products ADD COLUMN image_filename TEXT"
         )
     conn.commit()
     conn.close()
