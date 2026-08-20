@@ -224,18 +224,18 @@ def book():
         return redirect(url_for("home") + "#book")
 
     cursor = conn.execute(
-    """INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes)
-       VALUES(?,?,?,?,?,?,?)""",
-    (name,email,phone,experience,booking_date,guests_i,notes)
-)
+        """INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes)
+           VALUES(?,?,?,?,?,?,?)""",
+        (name,email,phone,experience,booking_date,guests_i,notes)
+    )
 
-booking_id = cursor.lastrowid
-booking_ref = f"BM-{booking_id:06d}"
+    booking_id = cursor.lastrowid
+    booking_ref = f"BM-{booking_id:06d}"
 
-conn.commit()
-conn.close()
+    conn.commit()
+    conn.close()
 
-email_message = f"""Hello {name},
+    email_message = f"""Hello {name},
 
 Thank you for choosing Big Mug Coffee Tour.
 
@@ -255,21 +255,20 @@ Big Mug Coffee Tour
 Discover the journey. Taste the story. Remember the experience.
 """
 
-send_booking_email(
-    email,
-    f"Big Mug Booking Received - {booking_ref}",
-    email_message
-)
+    send_booking_email(
+        email,
+        f"Big Mug Booking Received - {booking_ref}",
+        email_message
+    )
 
-flash(
-    f"Thank you. Your booking request has been received. "
-    f"Your booking reference is {booking_ref}. "
-    "Please check your email.",
-    "success"
-)
+    flash(
+        f"Thank you. Your booking request has been received. "
+        f"Your booking reference is {booking_ref}. "
+        "Please check your email.",
+        "success"
+    )
 
-return redirect(url_for("home") + "#book")
-
+    return redirect(url_for("home") + "#book")
 @app.route("/login", methods=["GET","POST"])
 def login():
     key = client_key()
