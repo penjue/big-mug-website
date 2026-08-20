@@ -258,6 +258,60 @@
       .section{
         padding:18px;
       }
+    .bookings-table{
+  min-width:0;
+}
+
+.bookings-table thead{
+  display:none;
+}
+
+.bookings-table,
+.bookings-table tbody,
+.bookings-table tr,
+.bookings-table td{
+  display:block;
+  width:100%;
+}
+
+.bookings-table tr{
+  background:#fffdfb;
+  border:1px solid #e8dfd8;
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:16px;
+  box-shadow:0 5px 16px rgba(0,0,0,.04);
+}
+
+.bookings-table td{
+  border:0;
+  padding:8px 0;
+}
+
+.bookings-table td::before{
+  display:block;
+  font-weight:800;
+  color:var(--coffee);
+  margin-bottom:3px;
+}
+
+.bookings-table td:nth-child(1)::before{content:"Customer";}
+.bookings-table td:nth-child(2)::before{content:"Contact";}
+.bookings-table td:nth-child(3)::before{content:"Experience";}
+.bookings-table td:nth-child(4)::before{content:"Date";}
+.bookings-table td:nth-child(5)::before{content:"Guests";}
+.bookings-table td:nth-child(6)::before{content:"Notes";}
+.bookings-table td:nth-child(7)::before{content:"Created";}
+.bookings-table td:nth-child(8)::before{content:"Status";}
+
+.bookings-table form.inline{
+  flex-direction:column;
+  align-items:stretch;
+}
+
+.bookings-table form.inline button{
+  width:100%;
+}
     }
   </style>
 </head>
@@ -321,7 +375,7 @@
 
     {% if bookings %}
     <div class="table-wrap">
-      <table>
+      <table class="bookings-table">
         <thead>
           <tr>
             <th>Customer</th>
