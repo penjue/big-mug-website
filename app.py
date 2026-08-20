@@ -133,7 +133,7 @@ def init_db():
                  "A tailored experience for couples, families, groups or corporate guests.")
             ]
         )    
-        product_columns = {
+    product_columns = {
         row["name"]
         for row in conn.execute("PRAGMA table_info(products)").fetchall()
     }
