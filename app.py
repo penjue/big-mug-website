@@ -255,16 +255,24 @@ Big Mug Coffee Tour
 Discover the journey. Taste the story. Remember the experience.
 """
 
-    send_booking_email(
-        email,
-        f"Big Mug Booking Received - {booking_ref}",
-        email_message
-    )
+    email_sent = send_booking_email(
+    email,
+    f"Big Mug Booking Received - {booking_ref}",
+    email_message
+)
 
+if email_sent:
     flash(
         f"Thank you. Your booking request has been received. "
         f"Your booking reference is {booking_ref}. "
-        "Please check your email.",
+        "A confirmation email has been sent to you.",
+        "success"
+    )
+else:
+    flash(
+        f"Thank you. Your booking request has been received. "
+        f"Your booking reference is {booking_ref}. "
+        "Please keep this reference for future communication.",
         "success"
     )
 
@@ -315,13 +323,69 @@ def admin():
 @app.post("/admin/booking/<int:item_id>/status")
 @login_required
 def booking_status(item_id):
-    status = request.form.get("status","New")
-    if status not in {"New","Confirmed","Completed","Cancelled"}:
+    status = request.form.get("status", "New")
+
+    if status not in {"New", "Confirmed", "Completed", "Cancelled"}:
         abort(400)
+
     conn = db()
-    conn.execute("UPDATE bookings SET status=? WHERE id=?", (status,item_id))
+
+    booking = conn.execute(
+        "SELECT * FROM bookings WHERE id=?",
+        (item_id,)
+    ).fetchone()
+
+    if not booking:
+        conn.close()
+        abort(404)
+
+    old_status = booking["status"]
+
+    conn.execute(
+        "UPDATE bookings SET status=? WHERE id=?",
+        (status, item_id)
+    )
     conn.commit()
     conn.close()
+
+    if status == "Confirmed" and old_status != "Confirmed":
+        booking_ref = f"BM-{item_id:06d}"
+
+        confirmation_message = f"""Hello {booking['name']},
+
+Great news! Your Big Mug Coffee Tour booking has been confirmed.
+
+Booking Reference: {booking_ref}
+Experience: {booking['experience']}
+Date: {booking['booking_date']}
+Number of Guests: {booking['guests']}
+Status: Confirmed
+
+We look forward to welcoming you and sharing the journey of Kenyan coffee from farm to cup.
+
+Please keep your booking reference for any future communication with us.
+
+Big Mug Coffee Tour
+Discover the journey. Taste the story. Remember the experience.
+"""
+
+        email_sent = send_booking_email(
+            booking["email"],
+            f"Big Mug Booking Confirmed - {booking_ref}",
+            confirmation_message
+        )
+
+        if email_sent:
+            flash(
+                f"Booking {booking_ref} confirmed and confirmation email sent.",
+                "success"
+            )
+        else:
+            flash(
+                f"Booking {booking_ref} confirmed, but the confirmation email could not be sent.",
+                "error"
+            )
+
     return redirect(url_for("admin"))
 
 @app.post("/admin/experience/add")
