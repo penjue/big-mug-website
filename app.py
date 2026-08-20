@@ -256,27 +256,27 @@ Discover the journey. Taste the story. Remember the experience.
 """
 
     email_sent = send_booking_email(
-    email,
-    f"Big Mug Booking Received - {booking_ref}",
-    email_message
-)
-
-if email_sent:
-    flash(
-        f"Thank you. Your booking request has been received. "
-        f"Your booking reference is {booking_ref}. "
-        "A confirmation email has been sent to you.",
-        "success"
-    )
-else:
-    flash(
-        f"Thank you. Your booking request has been received. "
-        f"Your booking reference is {booking_ref}. "
-        "Please keep this reference for future communication.",
-        "success"
+        email,
+        f"Big Mug Booking Received - {booking_ref}",
+        email_message
     )
 
-        return redirect(url_for("home") + "#book")
+    if email_sent:
+        flash(
+            f"Thank you. Your booking request has been received. "
+            f"Your booking reference is {booking_ref}. "
+            "A confirmation email has been sent to you.",
+            "success"
+        )
+    else:
+        flash(
+            f"Thank you. Your booking request has been received. "
+            f"Your booking reference is {booking_ref}. "
+            "Please keep this reference for future communication.",
+            "success"
+        )
+
+    return redirect(url_for("home") + "#book")
 @app.route("/login", methods=["GET","POST"])
 def login():
     key = client_key()
