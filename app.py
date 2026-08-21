@@ -59,6 +59,9 @@ def init_db():
         conn.execute("INSERT INTO admins(username,password_hash) VALUES(?,?)",(os.environ.get("BIG_MUG_ADMIN_USER","bigmugadmin"),generate_password_hash(os.environ.get("BIG_MUG_ADMIN_PASSWORD","BigMug2026!"))))
     if conn.execute("SELECT COUNT(*) c FROM experiences").fetchone()["c"]==0:
         conn.executemany("INSERT INTO experiences(name,price,duration,description) VALUES(?,?,?,?)",[("Coffee Farm Experience","From £45","3 hours","Walk through the coffee journey from farm to cup."),("Coffee & Adventure Day","From £85","Full day","Combine Kenyan coffee culture with a curated local adventure."),("Private Big Mug Experience","Custom","Flexible","A tailored experience for couples, families, groups or corporate guests.")])
+    bc={r["name"] for r in conn.execute("PRAGMA table_info(bookings)")}
+    if "country" not in bc: conn.execute("ALTER TABLE bookings ADD COLUMN country TEXT")
+    if "preferred_time" not in bc: conn.execute("ALTER TABLE bookings ADD COLUMN preferred_time TEXT")
     pc={r["name"] for r in conn.execute("PRAGMA table_info(products)")}
     if "image_filename" not in pc: conn.execute("ALTER TABLE products ADD COLUMN image_filename TEXT")
     if "category" not in pc: conn.execute("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT 'Coffee Bags'")
@@ -139,18 +142,18 @@ def home():
 
 @app.post("/book")
 def book():
-    name=request.form.get("name","").strip()[:120]; email=request.form.get("email","").strip()[:180]; phone=request.form.get("phone","").strip()[:60]; experience=request.form.get("experience","").strip()[:180]; date=request.form.get("booking_date","").strip()[:20]; notes=request.form.get("notes","").strip()[:1500]
+    name=request.form.get("name","").strip()[:120]; email=request.form.get("email","").strip()[:180]; phone=request.form.get("phone","").strip()[:60]; country=request.form.get("country","").strip()[:120]; experience=request.form.get("experience","").strip()[:180]; date=request.form.get("booking_date","").strip()[:20]; preferred_time=request.form.get("preferred_time","").strip()[:20]; notes=request.form.get("notes","").strip()[:1500]
     try: guests=int(request.form.get("guests","1")); assert 1<=guests<=100
     except: flash("Please enter a valid number of guests.","error"); return redirect(url_for("home")+"#book")
     if not all([name,email,experience,date]) or "@" not in email: flash("Please complete all required booking fields with a valid email.","error"); return redirect(url_for("home")+"#book")
     conn=db()
     if not conn.execute("SELECT id FROM experiences WHERE name=? AND active=1",(experience,)).fetchone(): conn.close(); flash("Please choose a currently available experience.","error"); return redirect(url_for("home")+"#book")
-    cur=conn.execute("INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes) VALUES(?,?,?,?,?,?,?)",(name,email,phone,experience,date,guests,notes)); ref=f"BM-{cur.lastrowid:06d}"; conn.commit(); conn.close()
-    msg=f"Hello {name},\n\nThank you for choosing Big Mug Coffee & Tours.\n\nBooking Reference: {ref}\nExperience: {experience}\nPreferred Date: {date}\nNumber of Guests: {guests}\nStatus: Pending Confirmation\n\nWe will contact you once your booking is confirmed.\n\nBig Mug Coffee & Tours"
-    send_booking_email(email,f"Big Mug Booking Received - {ref}",msg)
+    cur=conn.execute("INSERT INTO bookings(name,email,phone,country,experience,booking_date,preferred_time,guests,notes) VALUES(?,?,?,?,?,?,?,?,?)",(name,email,phone,country,experience,date,preferred_time,guests,notes)); ref=f"BM-{cur.lastrowid:06d}"; conn.commit(); conn.close()
+    msg=f"Hello {name},\n\nThank you for choosing Big Mug Coffee & Tours.\n\nBooking Reference: {ref}\nExperience: {experience}\nPreferred Date: {date}\nPreferred Time: {preferred_time or 'Not specified'}\nNumber of Guests: {guests}\nCountry / Location: {country or 'Not provided'}\nStatus: Pending Confirmation\n\nThis is a booking request, not a confirmed reservation yet. We will review availability and contact you once your booking is confirmed.\n\nBig Mug Coffee & Tours"
+    send_booking_email(email,f"Big Mug Booking Request Received - {ref}",msg)
     notify=admin_email()
-    if notify: send_booking_email(notify,f"[BOOKING] New Big Mug request - {ref}",f"New booking request\n\nReference: {ref}\nCustomer: {name}\nEmail: {email}\nPhone: {phone or 'Not provided'}\nExperience: {experience}\nPreferred date: {date}\nGuests: {guests}\nNotes: {notes or 'None'}\n\nReview this in Admin > Booking Requests.")
-    flash(f"Thank you. Your booking request has been received. Your booking reference is {ref}.","success"); return redirect(url_for("home")+"#book")
+    if notify: send_booking_email(notify,f"[BOOKING] New Big Mug request - {ref}",f"New booking request\n\nReference: {ref}\nCustomer: {name}\nEmail: {email}\nPhone: {phone or 'Not provided'}\nCountry / Location: {country or 'Not provided'}\nExperience: {experience}\nPreferred date: {date}\nPreferred time: {preferred_time or 'Not specified'}\nGuests: {guests}\nNotes: {notes or 'None'}\n\nReview this in Admin > Booking Requests.")
+    flash(f"Booking request received — our team will review availability and contact you shortly. Your reference is {ref}.","success"); return redirect(url_for("home")+"#book")
 
 @app.post("/enquire")
 def enquire():
@@ -194,11 +197,13 @@ def update_logo():
 @login_required
 def booking_status(item_id):
     status=request.form.get("status","New")
-    if status not in {"New","Confirmed","Completed","Cancelled"}: abort(400)
+    if status not in {"New","Pending","Confirmed","Completed","Cancelled"}: abort(400)
     conn=db(); booking=conn.execute("SELECT * FROM bookings WHERE id=?",(item_id,)).fetchone()
     if not booking: conn.close(); abort(404)
     old=booking["status"]; conn.execute("UPDATE bookings SET status=? WHERE id=?",(status,item_id)); conn.commit(); conn.close()
-    if status=="Confirmed" and old!="Confirmed": send_booking_email(booking["email"],f"Big Mug Booking Confirmed - BM-{item_id:06d}",f"Hello {booking['name']},\n\nYour Big Mug booking BM-{item_id:06d} is confirmed for {booking['booking_date']}.\n\nWe look forward to welcoming you.")
+    if status=="Confirmed" and old!="Confirmed":
+        time_text=f" at {booking['preferred_time']}" if booking['preferred_time'] else ""
+        send_booking_email(booking["email"],f"Big Mug Booking Confirmed - BM-{item_id:06d}",f"Hello {booking['name']},\n\nYour Big Mug booking BM-{item_id:06d} is confirmed for {booking['booking_date']}{time_text}.\n\nWe look forward to welcoming you.")
     return redirect(url_for("admin")+"#bookings")
 
 @app.post("/admin/enquiry/<int:item_id>/status")
