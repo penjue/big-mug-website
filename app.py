@@ -199,6 +199,17 @@ def save_image_upload(image, destination):
     return filename, None
 
 
+def remove_image_file(directory, filename):
+    if not filename:
+        return
+    try:
+        path = os.path.join(directory, os.path.basename(filename))
+        if os.path.isfile(path):
+            os.remove(path)
+    except OSError as exc:
+        print(f"Image cleanup failed: {exc}")
+
+
 @app.before_request
 def protect_posts():
     if request.method == "POST":
@@ -528,7 +539,75 @@ def add_product():
     conn.commit()
     conn.close()
     flash("Product added successfully.", "success")
-    return redirect(url_for("admin"))
+    return redirect(url_for("admin") + "#products")
+
+
+@app.post("/admin/product/<int:item_id>/edit")
+@login_required
+def edit_product(item_id):
+    name = request.form.get("name", "").strip()[:160]
+    if not name:
+        flash("Product name is required.", "error")
+        return redirect(url_for("admin") + "#products")
+
+    stock = request.form.get("stock", "In stock")
+    if stock not in {"In stock", "Sold out"}:
+        stock = "In stock"
+
+    conn = db()
+    product = conn.execute("SELECT * FROM products WHERE id=?", (item_id,)).fetchone()
+    if not product:
+        conn.close()
+        abort(404)
+
+    image_filename = product["image_filename"]
+    new_image = request.files.get("image")
+    if new_image and new_image.filename:
+        new_filename, error = save_image_upload(new_image, PRODUCT_IMAGE_DIR)
+        if error:
+            conn.close()
+            flash(error, "error")
+            return redirect(url_for("admin") + "#products")
+        old_filename = image_filename
+        image_filename = new_filename
+        remove_image_file(PRODUCT_IMAGE_DIR, old_filename)
+
+    conn.execute(
+        """UPDATE products
+           SET name=?, price=?, origin=?, stock=?, description=?, image_filename=?
+           WHERE id=?""",
+        (
+            name,
+            request.form.get("price", "").strip()[:60],
+            request.form.get("origin", "").strip()[:120],
+            stock,
+            request.form.get("description", "").strip()[:1200],
+            image_filename,
+            item_id
+        )
+    )
+    conn.commit()
+    conn.close()
+    flash("Product updated successfully.", "success")
+    return redirect(url_for("admin") + "#products")
+
+
+@app.post("/admin/product/<int:item_id>/delete")
+@login_required
+def delete_product(item_id):
+    conn = db()
+    product = conn.execute("SELECT * FROM products WHERE id=?", (item_id,)).fetchone()
+    if not product:
+        conn.close()
+        abort(404)
+
+    image_filename = product["image_filename"]
+    conn.execute("DELETE FROM products WHERE id=?", (item_id,))
+    conn.commit()
+    conn.close()
+    remove_image_file(PRODUCT_IMAGE_DIR, image_filename)
+    flash("Product deleted successfully.", "success")
+    return redirect(url_for("admin") + "#products")
 
 
 @app.post("/admin/enquiry/add")
