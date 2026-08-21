@@ -40,6 +40,7 @@
     button,.btn{display:inline-block;border:0;background:var(--gold);color:#1d1713;padding:11px 17px;border-radius:999px;font-weight:800;cursor:pointer;text-decoration:none}
     .btn-dark{background:var(--coffee);color:white}
     .btn-green{background:var(--green);color:white}
+    .btn-red{background:var(--red);color:white}
     .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:.82rem;font-weight:700;background:#eee5dd}
     .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px}
     .item-card{border:1px solid #e8dfd8;border-radius:14px;padding:17px;background:#fffdfb}
@@ -52,6 +53,10 @@
     .logo-preview img{width:100%;height:100%;object-fit:contain;padding:4px}
     .mini-form{margin-top:14px;padding-top:14px;border-top:1px solid #eee3db}
     .mini-form button{margin-top:10px;width:100%}
+    .product-edit{margin-top:16px;padding-top:16px;border-top:1px solid #eee3db}
+    .product-edit .form-grid{grid-template-columns:1fr}
+    .product-actions{display:grid;gap:10px;margin-top:12px}
+    .product-actions button{width:100%}
     footer{text-align:center;color:#766b63;padding:25px}
 
     @media(max-width:700px){
@@ -186,8 +191,9 @@
     </form>
   </section>
 
-  <section class="section">
+  <section class="section" id="products">
     <div class="section-head"><h2>Coffee Marketplace Products</h2></div>
+    <p class="muted">Edit product details, replace photos, change stock status or remove products from the marketplace.</p>
     {% if products %}
     <div class="cards">
       {% for product in products %}
@@ -200,6 +206,31 @@
         <p><strong>Origin:</strong> {{ product["origin"] or "Not specified" }}</p>
         <p>{{ product["description"] or "" }}</p>
         <span class="badge">{{ product["stock"] }}</span>
+
+        <form class="product-edit" method="POST" action="/admin/product/{{ product['id'] }}/edit" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <h3>Edit Product</h3>
+          <div class="form-grid">
+            <div><label>Product name</label><input type="text" name="name" value="{{ product['name'] }}" required></div>
+            <div><label>Price</label><input type="text" name="price" value="{{ product['price'] or '' }}"></div>
+            <div><label>Origin</label><input type="text" name="origin" value="{{ product['origin'] or '' }}"></div>
+            <div>
+              <label>Stock status</label>
+              <select name="stock">
+                <option value="In stock" {% if product['stock'] == 'In stock' %}selected{% endif %}>In stock</option>
+                <option value="Sold out" {% if product['stock'] == 'Sold out' %}selected{% endif %}>Sold out</option>
+              </select>
+            </div>
+            <div><label>Replace product photo (optional)</label><input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></div>
+            <div><label>Description</label><textarea name="description">{{ product['description'] or '' }}</textarea></div>
+          </div>
+          <div class="product-actions"><button type="submit">Save Product Changes</button></div>
+        </form>
+
+        <form method="POST" action="/admin/product/{{ product['id'] }}/delete" class="product-actions">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-red">Delete Product</button>
+        </form>
       </div>
       {% endfor %}
     </div>
