@@ -56,6 +56,10 @@ def init_db():
     if "category" not in pc: conn.execute("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT 'Coffee Bags'")
     ec={r["name"] for r in conn.execute("PRAGMA table_info(experiences)")}
     if "image_filename" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN image_filename TEXT")
+    if "included" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN included TEXT")
+    if "itinerary" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN itinerary TEXT")
+    if "audience" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN audience TEXT")
+    if "meeting_point" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN meeting_point TEXT")
     qc={r["name"] for r in conn.execute("PRAGMA table_info(enquiries)")}
     if "email" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN email TEXT")
     if "phone" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN phone TEXT")
@@ -210,7 +214,7 @@ def delete_enquiry(item_id):
 def add_experience():
     name=request.form.get("name","").strip()[:160]
     if not name: flash("Experience name is required.","error"); return redirect(url_for("admin")+"#experiences")
-    conn=db(); cur=conn.execute("INSERT INTO experiences(name,price,duration,description) VALUES(?,?,?,?)",(name,request.form.get("price","").strip()[:60],request.form.get("duration","").strip()[:80],request.form.get("description","").strip()[:1200])); exp_id=cur.lastrowid; conn.commit(); conn.close()
+    conn=db(); cur=conn.execute("INSERT INTO experiences(name,price,duration,description,included,itinerary,audience,meeting_point) VALUES(?,?,?,?,?,?,?,?)",(name,request.form.get("price","").strip()[:60],request.form.get("duration","").strip()[:80],request.form.get("description","").strip()[:1200],request.form.get("included","").strip()[:1600],request.form.get("itinerary","").strip()[:2000],request.form.get("audience","").strip()[:1200],request.form.get("meeting_point","").strip()[:800])); exp_id=cur.lastrowid; conn.commit(); conn.close()
     uploaded=0
     for image in request.files.getlist("images")[:8]:
         if image and image.filename:
@@ -226,7 +230,7 @@ def edit_experience(item_id):
     if not name: flash("Experience name is required.","error"); return redirect(url_for("admin")+"#experiences")
     active=1 if request.form.get("active")=="1" else 0; conn=db()
     if not conn.execute("SELECT id FROM experiences WHERE id=?",(item_id,)).fetchone(): conn.close(); abort(404)
-    conn.execute("UPDATE experiences SET name=?,price=?,duration=?,description=?,active=? WHERE id=?",(name,request.form.get("price","").strip()[:60],request.form.get("duration","").strip()[:80],request.form.get("description","").strip()[:1200],active,item_id)); conn.commit(); conn.close(); flash("Experience updated successfully.","success"); return redirect(url_for("admin")+"#experiences")
+    conn.execute("UPDATE experiences SET name=?,price=?,duration=?,description=?,included=?,itinerary=?,audience=?,meeting_point=?,active=? WHERE id=?",(name,request.form.get("price","").strip()[:60],request.form.get("duration","").strip()[:80],request.form.get("description","").strip()[:1200],request.form.get("included","").strip()[:1600],request.form.get("itinerary","").strip()[:2000],request.form.get("audience","").strip()[:1200],request.form.get("meeting_point","").strip()[:800],active,item_id)); conn.commit(); conn.close(); flash("Experience updated successfully.","success"); return redirect(url_for("admin")+"#experiences")
 
 @app.post("/admin/experience/<int:item_id>/images")
 @login_required
