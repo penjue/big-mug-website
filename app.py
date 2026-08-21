@@ -12,6 +12,7 @@ DB = os.environ.get("BIG_MUG_DB_PATH", os.path.join(BASE_DIR, "big_mug.db"))
 PRODUCT_IMAGE_DIR = os.environ.get("BIG_MUG_PRODUCT_IMAGE_DIR", "/var/data/product_images")
 SITE_IMAGE_DIR = os.environ.get("BIG_MUG_SITE_IMAGE_DIR", "/var/data/site_images")
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+PRODUCT_CATEGORIES = {"Coffee Bags", "Barista Coffee Tools"}
 
 os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
 os.makedirs(SITE_IMAGE_DIR, exist_ok=True)
@@ -39,11 +40,9 @@ def send_booking_email(to_email, subject, message):
     smtp_user = os.environ.get("BIG_MUG_SMTP_USER")
     smtp_password = os.environ.get("BIG_MUG_SMTP_PASSWORD")
     from_email = os.environ.get("BIG_MUG_FROM_EMAIL", smtp_user)
-
     if not all([smtp_host, smtp_user, smtp_password, from_email]):
         print("Email not sent: SMTP settings are incomplete.")
         return False
-
     try:
         email = EmailMessage()
         email["Subject"] = subject
@@ -138,6 +137,8 @@ def init_db():
     product_columns = {row["name"] for row in conn.execute("PRAGMA table_info(products)").fetchall()}
     if "image_filename" not in product_columns:
         conn.execute("ALTER TABLE products ADD COLUMN image_filename TEXT")
+    if "category" not in product_columns:
+        conn.execute("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT 'Coffee Bags'")
 
     experience_columns = {row["name"] for row in conn.execute("PRAGMA table_info(experiences)").fetchall()}
     if "image_filename" not in experience_columns:
@@ -185,15 +186,12 @@ def set_setting(key, value):
 def save_image_upload(image, destination):
     if not image or not image.filename:
         return None, "Please choose an image to upload."
-
     original_name = secure_filename(image.filename)
     if "." not in original_name:
         return None, "Please upload a JPG, JPEG, PNG or WEBP image."
-
     extension = original_name.rsplit(".", 1)[1].lower()
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
         return None, "Please upload a JPG, JPEG, PNG or WEBP image."
-
     filename = f"{secrets.token_hex(12)}.{extension}"
     image.save(os.path.join(destination, filename))
     return filename, None
@@ -208,6 +206,10 @@ def remove_image_file(directory, filename):
             os.remove(path)
     except OSError as exc:
         print(f"Image cleanup failed: {exc}")
+
+
+def clean_category(value):
+    return value if value in PRODUCT_CATEGORIES else "Coffee Bags"
 
 
 @app.before_request
@@ -272,11 +274,18 @@ def site_image(filename):
 def home():
     conn = db()
     exps = conn.execute("SELECT * FROM experiences WHERE active=1 ORDER BY id").fetchall()
-    products = conn.execute("SELECT * FROM products ORDER BY id DESC LIMIT 12").fetchall()
+    coffee_bags = conn.execute("SELECT * FROM products WHERE category='Coffee Bags' ORDER BY id DESC LIMIT 12").fetchall()
+    barista_tools = conn.execute("SELECT * FROM products WHERE category='Barista Coffee Tools' ORDER BY id DESC LIMIT 12").fetchall()
     logo_row = conn.execute("SELECT value FROM site_settings WHERE key='logo_filename'").fetchone()
     conn.close()
     logo_filename = logo_row["value"] if logo_row else None
-    return render_template("index.html", experiences=exps, products=products, logo_filename=logo_filename)
+    return render_template(
+        "index.html",
+        experiences=exps,
+        coffee_bags=coffee_bags,
+        barista_tools=barista_tools,
+        logo_filename=logo_filename
+    )
 
 
 @app.post("/book")
@@ -292,7 +301,6 @@ def book():
     if not all([name, email, experience, booking_date, guests]) or "@" not in email:
         flash("Please complete all required booking fields with a valid email.", "error")
         return redirect(url_for("home") + "#book")
-
     try:
         guests_i = int(guests)
         if guests_i < 1 or guests_i > 100:
@@ -337,7 +345,6 @@ We will contact you again once your booking has been confirmed.
 Big Mug Coffee & Tours
 Discover the journey. Taste the story. Remember the experience.
 """
-
     email_sent = send_booking_email(email, f"Big Mug Booking Received - {booking_ref}", email_message)
     if email_sent:
         flash(f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. A confirmation email has been sent to you.", "success")
@@ -353,13 +360,11 @@ def login():
         if login_blocked(key):
             flash("Too many failed login attempts. Please try again later.", "error")
             return render_template("login.html"), 429
-
         username = request.form.get("username", "").strip()[:120]
         password = request.form.get("password", "")
         conn = db()
         admin_user = conn.execute("SELECT * FROM admins WHERE username=?", (username,)).fetchone()
         conn.close()
-
         if admin_user and check_password_hash(admin_user["password_hash"], password):
             LOGIN_ATTEMPTS.pop(key, None)
             session.clear()
@@ -368,7 +373,6 @@ def login():
             session["username"] = admin_user["username"]
             csrf_token()
             return redirect(url_for("admin"))
-
         record_failed_login(key)
         flash("Invalid username or password.", "error")
     return render_template("login.html")
@@ -386,7 +390,7 @@ def admin():
     conn = db()
     bookings = conn.execute("SELECT * FROM bookings ORDER BY created_at DESC").fetchall()
     experiences = conn.execute("SELECT * FROM experiences ORDER BY id ASC").fetchall()
-    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
+    products = conn.execute("SELECT * FROM products ORDER BY category, id DESC").fetchall()
     enquiries = conn.execute("SELECT * FROM enquiries ORDER BY created_at DESC").fetchall()
     logo_row = conn.execute("SELECT value FROM site_settings WHERE key='logo_filename'").fetchone()
     conn.close()
@@ -420,7 +424,6 @@ def update_experience_image(item_id):
     if error:
         flash(error, "error")
         return redirect(url_for("admin") + "#experiences")
-
     conn = db()
     exists = conn.execute("SELECT id FROM experiences WHERE id=?", (item_id,)).fetchone()
     if not exists:
@@ -439,13 +442,11 @@ def booking_status(item_id):
     status = request.form.get("status", "New")
     if status not in {"New", "Confirmed", "Completed", "Cancelled"}:
         abort(400)
-
     conn = db()
     booking = conn.execute("SELECT * FROM bookings WHERE id=?", (item_id,)).fetchone()
     if not booking:
         conn.close()
         abort(404)
-
     old_status = booking["status"]
     conn.execute("UPDATE bookings SET status=? WHERE id=?", (status, item_id))
     conn.commit()
@@ -475,7 +476,6 @@ Discover the journey. Taste the story. Remember the experience.
             flash(f"Booking {booking_ref} confirmed and confirmation email sent.", "success")
         else:
             flash(f"Booking {booking_ref} confirmed, but the confirmation email could not be sent.", "error")
-
     return redirect(url_for("admin"))
 
 
@@ -486,7 +486,6 @@ def add_experience():
     if not name:
         flash("Experience name is required.", "error")
         return redirect(url_for("admin"))
-
     conn = db()
     conn.execute(
         "INSERT INTO experiences(name,price,duration,description) VALUES(?,?,?,?)",
@@ -508,32 +507,31 @@ def add_product():
     name = request.form.get("name", "").strip()[:160]
     if not name:
         flash("Product name is required.", "error")
-        return redirect(url_for("admin"))
-
+        return redirect(url_for("admin") + "#products")
     stock = request.form.get("stock", "In stock")
     if stock not in {"In stock", "Sold out"}:
         stock = "In stock"
-
+    category = clean_category(request.form.get("category", "Coffee Bags"))
     image_filename = None
     image = request.files.get("image")
     if image and image.filename:
         image_filename, error = save_image_upload(image, PRODUCT_IMAGE_DIR)
         if error:
             flash(error, "error")
-            return redirect(url_for("admin"))
-
+            return redirect(url_for("admin") + "#products")
     conn = db()
     conn.execute(
         """INSERT INTO products
-           (name, price, origin, stock, description, image_filename)
-           VALUES (?, ?, ?, ?, ?, ?)""",
+           (name, price, origin, stock, description, image_filename, category)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (
             name,
             request.form.get("price", "").strip()[:60],
             request.form.get("origin", "").strip()[:120],
             stock,
             request.form.get("description", "").strip()[:1200],
-            image_filename
+            image_filename,
+            category
         )
     )
     conn.commit()
@@ -549,17 +547,15 @@ def edit_product(item_id):
     if not name:
         flash("Product name is required.", "error")
         return redirect(url_for("admin") + "#products")
-
     stock = request.form.get("stock", "In stock")
     if stock not in {"In stock", "Sold out"}:
         stock = "In stock"
-
+    category = clean_category(request.form.get("category", "Coffee Bags"))
     conn = db()
     product = conn.execute("SELECT * FROM products WHERE id=?", (item_id,)).fetchone()
     if not product:
         conn.close()
         abort(404)
-
     image_filename = product["image_filename"]
     new_image = request.files.get("image")
     if new_image and new_image.filename:
@@ -571,10 +567,9 @@ def edit_product(item_id):
         old_filename = image_filename
         image_filename = new_filename
         remove_image_file(PRODUCT_IMAGE_DIR, old_filename)
-
     conn.execute(
         """UPDATE products
-           SET name=?, price=?, origin=?, stock=?, description=?, image_filename=?
+           SET name=?, price=?, origin=?, stock=?, description=?, image_filename=?, category=?
            WHERE id=?""",
         (
             name,
@@ -583,6 +578,7 @@ def edit_product(item_id):
             stock,
             request.form.get("description", "").strip()[:1200],
             image_filename,
+            category,
             item_id
         )
     )
@@ -600,7 +596,6 @@ def delete_product(item_id):
     if not product:
         conn.close()
         abort(404)
-
     image_filename = product["image_filename"]
     conn.execute("DELETE FROM products WHERE id=?", (item_id,))
     conn.commit()
@@ -618,11 +613,9 @@ def add_enquiry():
     if not name or not contact:
         flash("Customer name and contact are required.", "error")
         return redirect(url_for("admin"))
-
     status = request.form.get("status", "New")
     if status not in {"New", "Contacted", "Confirmed", "Closed"}:
         status = "New"
-
     conn = db()
     conn.execute(
         "INSERT INTO enquiries(name,contact,interest,status) VALUES(?,?,?,?)",
@@ -639,21 +632,18 @@ def change_password():
     current = request.form.get("current_password", "")
     new = request.form.get("new_password", "")
     confirm = request.form.get("confirm_password", "")
-
     if len(new) < 12:
         flash("New password must be at least 12 characters.", "error")
         return redirect(url_for("admin") + "#security")
     if new != confirm:
         flash("New passwords do not match.", "error")
         return redirect(url_for("admin") + "#security")
-
     conn = db()
     admin_user = conn.execute("SELECT * FROM admins WHERE id=?", (session["admin_id"],)).fetchone()
     if not admin_user or not check_password_hash(admin_user["password_hash"], current):
         conn.close()
         flash("Current password is incorrect.", "error")
         return redirect(url_for("admin") + "#security")
-
     conn.execute("UPDATE admins SET password_hash=? WHERE id=?", (generate_password_hash(new), session["admin_id"]))
     conn.commit()
     conn.close()
