@@ -4,323 +4,75 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Big Mug Admin Dashboard</title>
-
   <style>
     :root{
-      --coffee:#3b2418;
-      --coffee2:#5a3826;
-      --cream:#f4eadf;
-      --gold:#c99853;
-      --dark:#1d1713;
-      --soft:#fffaf5;
-      --border:#ded3ca;
-      --green:#2f6f45;
-      --red:#9f3b30;
+      --coffee:#3b2418;--coffee2:#5a3826;--cream:#f4eadf;--gold:#c99853;
+      --dark:#1d1713;--soft:#fffaf5;--border:#ded3ca;--green:#2f6f45;--red:#9f3b30;
     }
-
     *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      font-family:Arial, Helvetica, sans-serif;
-      background:#f5f1ed;
-      color:var(--dark);
-    }
-
-    header{
-      background:var(--coffee);
-      color:white;
-      padding:18px 5%;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:20px;
-      flex-wrap:wrap;
-    }
-
-    .brand{
-      font-size:1.5rem;
-      font-weight:800;
-      letter-spacing:1.5px;
-    }
-
-    .header-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .header-actions a{
-      color:white;
-      text-decoration:none;
-      border:1px solid rgba(255,255,255,.35);
-      padding:9px 14px;
-      border-radius:999px;
-    }
-
-    .wrap{
-      width:min(1400px,94%);
-      margin:30px auto 70px;
-    }
-
-    .welcome{
-      background:white;
-      padding:25px;
-      border-radius:18px;
-      box-shadow:0 8px 25px rgba(0,0,0,.06);
-      margin-bottom:25px;
-    }
-
-    h1,h2,h3{
-      color:var(--coffee);
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-      gap:16px;
-      margin:20px 0 30px;
-    }
-
-    .stat{
-      background:white;
-      padding:20px;
-      border-radius:16px;
-      box-shadow:0 6px 20px rgba(0,0,0,.05);
-    }
-
-    .stat strong{
-      display:block;
-      font-size:2rem;
-      color:var(--gold);
-      margin-top:6px;
-    }
-
-    .section{
-      background:white;
-      padding:24px;
-      border-radius:18px;
-      box-shadow:0 8px 25px rgba(0,0,0,.06);
-      margin-bottom:25px;
-      overflow:hidden;
-    }
-
-    .section-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:15px;
-      flex-wrap:wrap;
-      margin-bottom:18px;
-    }
-
-    .section h2{
-      margin:0;
-    }
-
-    .flash{
-      padding:13px 16px;
-      background:#f7e4c8;
-      border-radius:10px;
-      margin-bottom:18px;
-    }
-
-    .table-wrap{
-      overflow-x:auto;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:850px;
-    }
-
-    th,td{
-      text-align:left;
-      padding:12px 10px;
-      border-bottom:1px solid #ece5df;
-      vertical-align:top;
-    }
-
-    th{
-      background:#f8f4f0;
-      color:var(--coffee);
-    }
-
-    form.inline{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-
-    input,select,textarea{
-      width:100%;
-      padding:11px 12px;
-      border:1px solid var(--border);
-      border-radius:9px;
-      font-size:.95rem;
-    }
-
-    textarea{
-      min-height:100px;
-      resize:vertical;
-    }
-
-    label{
-      display:block;
-      margin-bottom:6px;
-      font-weight:700;
-      color:var(--coffee);
-    }
-
-    .form-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .full{
-      grid-column:1/-1;
-    }
-
-    button,.btn{
-      display:inline-block;
-      border:0;
-      background:var(--gold);
-      color:#1d1713;
-      padding:11px 17px;
-      border-radius:999px;
-      font-weight:800;
-      cursor:pointer;
-      text-decoration:none;
-    }
-
-    .btn-dark{
-      background:var(--coffee);
-      color:white;
-    }
-
-    .btn-green{
-      background:var(--green);
-      color:white;
-    }
-
-    .badge{
-      display:inline-block;
-      padding:5px 9px;
-      border-radius:999px;
-      font-size:.82rem;
-      font-weight:700;
-      background:#eee5dd;
-    }
-
-    .cards{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-      gap:15px;
-    }
-
-    .item-card{
-      border:1px solid #e8dfd8;
-      border-radius:14px;
-      padding:17px;
-      background:#fffdfb;
-    }
-
-    .item-card h3{
-      margin-top:0;
-    }
-
-    .muted{
-      color:#74665d;
-      font-size:.92rem;
-    }
-
-    .security{
-      border-left:5px solid var(--gold);
-    }
-
-    footer{
-      text-align:center;
-      color:#766b63;
-      padding:25px;
-    }
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f1ed;color:var(--dark)}
+    header{background:var(--coffee);color:white;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+    .brand{font-size:1.5rem;font-weight:800;letter-spacing:1.5px}
+    .header-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .header-actions a{color:white;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:9px 14px;border-radius:999px}
+    .wrap{width:min(1400px,94%);margin:30px auto 70px}
+    .welcome,.section,.stat{background:white;border-radius:18px;box-shadow:0 8px 25px rgba(0,0,0,.06)}
+    .welcome{padding:25px;margin-bottom:25px}
+    h1,h2,h3{color:var(--coffee)}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:20px 0 30px}
+    .stat{padding:20px}
+    .stat strong{display:block;font-size:2rem;color:var(--gold);margin-top:6px}
+    .section{padding:24px;margin-bottom:25px;overflow:hidden}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:18px}
+    .section h2{margin:0}
+    .flash{padding:13px 16px;background:#f7e4c8;border-radius:10px;margin-bottom:18px}
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;min-width:850px}
+    th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #ece5df;vertical-align:top}
+    th{background:#f8f4f0;color:var(--coffee)}
+    form.inline{display:flex;gap:8px;align-items:center}
+    input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:.95rem;background:white}
+    input[type=file]{padding:9px;background:#fff}
+    textarea{min-height:100px;resize:vertical}
+    label{display:block;margin-bottom:6px;font-weight:700;color:var(--coffee)}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .full{grid-column:1/-1}
+    button,.btn{display:inline-block;border:0;background:var(--gold);color:#1d1713;padding:11px 17px;border-radius:999px;font-weight:800;cursor:pointer;text-decoration:none}
+    .btn-dark{background:var(--coffee);color:white}
+    .btn-green{background:var(--green);color:white}
+    .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:.82rem;font-weight:700;background:#eee5dd}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px}
+    .item-card{border:1px solid #e8dfd8;border-radius:14px;padding:17px;background:#fffdfb}
+    .item-card h3{margin-top:0}
+    .muted{color:#74665d;font-size:.92rem}
+    .security{border-left:5px solid var(--gold)}
+    .image-preview{height:180px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#2b1810,#5a3826);display:grid;place-items:center;color:var(--gold);font-size:2.5rem;margin-bottom:14px}
+    .image-preview img{width:100%;height:100%;object-fit:cover}
+    .logo-preview{width:110px;height:110px;border-radius:50%;overflow:hidden;background:#2b1810;border:3px solid var(--gold);display:grid;place-items:center;color:var(--gold);font-size:2.5rem;margin:0 0 18px}
+    .logo-preview img{width:100%;height:100%;object-fit:contain;padding:4px}
+    .mini-form{margin-top:14px;padding-top:14px;border-top:1px solid #eee3db}
+    .mini-form button{margin-top:10px;width:100%}
+    footer{text-align:center;color:#766b63;padding:25px}
 
     @media(max-width:700px){
-      .form-grid{
-        grid-template-columns:1fr;
-      }
-
-      .wrap{
-        width:95%;
-      }
-
-      .section{
-        padding:18px;
-      }
-    .bookings-table{
-  min-width:0;
-}
-
-.bookings-table thead{
-  display:none;
-}
-
-.bookings-table,
-.bookings-table tbody,
-.bookings-table tr,
-.bookings-table td{
-  display:block;
-  width:100%;
-}
-
-.bookings-table tr{
-  background:#fffdfb;
-  border:1px solid #e8dfd8;
-  border-radius:16px;
-  padding:14px;
-  margin-bottom:16px;
-  box-shadow:0 5px 16px rgba(0,0,0,.04);
-}
-
-.bookings-table td{
-  border:0;
-  padding:8px 0;
-}
-
-.bookings-table td::before{
-  display:block;
-  font-weight:800;
-  color:var(--coffee);
-  margin-bottom:3px;
-}
-
-.bookings-table td:nth-child(1)::before{content:"Customer";}
-.bookings-table td:nth-child(2)::before{content:"Contact";}
-.bookings-table td:nth-child(3)::before{content:"Experience";}
-.bookings-table td:nth-child(4)::before{content:"Date";}
-.bookings-table td:nth-child(5)::before{content:"Guests";}
-.bookings-table td:nth-child(6)::before{content:"Notes";}
-.bookings-table td:nth-child(7)::before{content:"Created";}
-.bookings-table td:nth-child(8)::before{content:"Status";}
-
-.bookings-table form.inline{
-  flex-direction:column;
-  align-items:stretch;
-}
-
-.bookings-table form.inline button{
-  width:100%;
-}
+      .form-grid{grid-template-columns:1fr}.wrap{width:95%}.section{padding:18px}
+      .bookings-table{min-width:0}.bookings-table thead{display:none}
+      .bookings-table,.bookings-table tbody,.bookings-table tr,.bookings-table td{display:block;width:100%}
+      .bookings-table tr{background:#fffdfb;border:1px solid #e8dfd8;border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 5px 16px rgba(0,0,0,.04)}
+      .bookings-table td{border:0;padding:8px 0}
+      .bookings-table td::before{display:block;font-weight:800;color:var(--coffee);margin-bottom:3px}
+      .bookings-table td:nth-child(1)::before{content:"Customer"}.bookings-table td:nth-child(2)::before{content:"Contact"}
+      .bookings-table td:nth-child(3)::before{content:"Experience"}.bookings-table td:nth-child(4)::before{content:"Date"}
+      .bookings-table td:nth-child(5)::before{content:"Guests"}.bookings-table td:nth-child(6)::before{content:"Notes"}
+      .bookings-table td:nth-child(7)::before{content:"Created"}.bookings-table td:nth-child(8)::before{content:"Status"}
+      .bookings-table form.inline{flex-direction:column;align-items:stretch}.bookings-table form.inline button{width:100%}
     }
   </style>
 </head>
-
 <body>
 
 <header>
   <div class="brand">BIG MUG ADMIN</div>
-
   <div class="header-actions">
     <a href="/">View Website</a>
     <a href="/admin/backup">Download Backup</a>
@@ -329,111 +81,62 @@
 </header>
 
 <div class="wrap">
-
   <div class="welcome">
     <h1>Dashboard</h1>
-    <p>
-      Welcome, <strong>{{ session.get("username", "Admin") }}</strong>.
-      Manage Big Mug bookings, experiences, products and customer enquiries here.
-    </p>
+    <p>Welcome, <strong>{{ session.get("username", "Admin") }}</strong>. Manage Big Mug bookings, branding, experience photos, products and customer enquiries here.</p>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="flash">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
+    {% if messages %}{% for category, message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}
   {% endwith %}
 
   <div class="stats">
-    <div class="stat">
-      Bookings
-      <strong>{{ bookings|length }}</strong>
-    </div>
-
-    <div class="stat">
-      Experiences
-      <strong>{{ experiences|length }}</strong>
-    </div>
-
-    <div class="stat">
-      Products
-      <strong>{{ products|length }}</strong>
-    </div>
-
-    <div class="stat">
-      Enquiries
-      <strong>{{ enquiries|length }}</strong>
-    </div>
+    <div class="stat">Bookings<strong>{{ bookings|length }}</strong></div>
+    <div class="stat">Experiences<strong>{{ experiences|length }}</strong></div>
+    <div class="stat">Products<strong>{{ products|length }}</strong></div>
+    <div class="stat">Enquiries<strong>{{ enquiries|length }}</strong></div>
   </div>
 
-  <section class="section">
-    <div class="section-head">
-      <h2>Customer Bookings</h2>
+  <section class="section" id="branding">
+    <div class="section-head"><h2>Website Branding</h2></div>
+    <p class="muted">Change the small Big Mug profile/logo image shown in the website header and footer.</p>
+    <div class="logo-preview">
+      {% if logo_filename %}<img src="{{ url_for('site_image', filename=logo_filename) }}" alt="Current Big Mug logo">{% else %}☕{% endif %}
     </div>
+    <form method="POST" action="/admin/site/logo" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div class="full">
+          <label>New logo / profile image</label>
+          <input type="file" name="logo" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+          <p class="muted">JPG, JPEG, PNG or WEBP. Maximum upload size: 2 MB.</p>
+        </div>
+      </div>
+      <button type="submit">Update Website Logo</button>
+    </form>
+  </section>
 
+  <section class="section">
+    <div class="section-head"><h2>Customer Bookings</h2></div>
     {% if bookings %}
     <div class="table-wrap">
       <table class="bookings-table">
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Contact</th>
-            <th>Experience</th>
-            <th>Date</th>
-            <th>Guests</th>
-            <th>Notes</th>
-            <th>Created</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
+        <thead><tr><th>Customer</th><th>Contact</th><th>Experience</th><th>Date</th><th>Guests</th><th>Notes</th><th>Created</th><th>Status</th></tr></thead>
         <tbody>
           {% for booking in bookings %}
           <tr>
+            <td><strong>{{ booking["name"] }}</strong></td>
+            <td>{{ booking["email"] }}<br><span class="muted">{{ booking["phone"] or "No phone" }}</span></td>
+            <td>{{ booking["experience"] }}</td><td>{{ booking["booking_date"] }}</td><td>{{ booking["guests"] }}</td>
+            <td>{{ booking["notes"] or "—" }}</td><td>{{ booking["created_at"] }}</td>
             <td>
-              <strong>{{ booking["name"] }}</strong>
-            </td>
-
-            <td>
-              {{ booking["email"] }}<br>
-              <span class="muted">{{ booking["phone"] or "No phone" }}</span>
-            </td>
-
-            <td>{{ booking["experience"] }}</td>
-            <td>{{ booking["booking_date"] }}</td>
-            <td>{{ booking["guests"] }}</td>
-
-            <td>
-              {{ booking["notes"] or "—" }}
-            </td>
-
-            <td>{{ booking["created_at"] }}</td>
-
-            <td>
-              <form
-                class="inline"
-                method="POST"
-                action="/admin/booking/{{ booking['id'] }}/status"
-              >
-                <input
-                  type="hidden"
-                  name="_csrf_token"
-                  value="{{ csrf_token() }}"
-                >
-
+              <form class="inline" method="POST" action="/admin/booking/{{ booking['id'] }}/status">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <select name="status">
                   {% for option in ["New","Confirmed","Completed","Cancelled"] %}
-                    <option
-                      value="{{ option }}"
-                      {% if booking["status"] == option %}selected{% endif %}
-                    >
-                      {{ option }}
-                    </option>
+                  <option value="{{ option }}" {% if booking["status"] == option %}selected{% endif %}>{{ option }}</option>
                   {% endfor %}
                 </select>
-
                 <button type="submit">Save</button>
               </form>
             </td>
@@ -442,322 +145,125 @@
         </tbody>
       </table>
     </div>
-    {% else %}
-      <p class="muted">No customer bookings have been received yet.</p>
-    {% endif %}
+    {% else %}<p class="muted">No customer bookings have been received yet.</p>{% endif %}
   </section>
 
-  <section class="section">
-    <div class="section-head">
-      <h2>Experiences</h2>
-    </div>
-
+  <section class="section" id="experiences">
+    <div class="section-head"><h2>Experiences & Photos</h2></div>
     <div class="cards">
       {% for experience in experiences %}
       <div class="item-card">
+        <div class="image-preview">
+          {% if experience["image_filename"] %}<img src="{{ url_for('site_image', filename=experience['image_filename']) }}" alt="{{ experience['name'] }}">{% else %}☕{% endif %}
+        </div>
         <h3>{{ experience["name"] }}</h3>
-
-        <p>
-          <strong>{{ experience["price"] or "Price not set" }}</strong>
-        </p>
-
-        <p>
-          {{ experience["duration"] or "Duration not set" }}
-        </p>
-
+        <p><strong>{{ experience["price"] or "Price not set" }}</strong></p>
+        <p>{{ experience["duration"] or "Duration not set" }}</p>
         <p>{{ experience["description"] or "" }}</p>
+        <span class="badge">{% if experience["active"] %}Active{% else %}Inactive{% endif %}</span>
 
-        <span class="badge">
-          {% if experience["active"] %}
-            Active
-          {% else %}
-            Inactive
-          {% endif %}
-        </span>
+        <form class="mini-form" method="POST" action="/admin/experience/{{ experience['id'] }}/image" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <label>Change this experience photo</label>
+          <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+          <button type="submit">Upload New Photo</button>
+        </form>
       </div>
       {% endfor %}
     </div>
 
     <hr style="border:0;border-top:1px solid #eee3db;margin:28px 0;">
-
     <h3>Add New Experience</h3>
-
     <form method="POST" action="/admin/experience/add">
-      <input
-        type="hidden"
-        name="_csrf_token"
-        value="{{ csrf_token() }}"
-      >
-
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="form-grid">
-        <div>
-          <label>Experience name</label>
-          <input type="text" name="name" required>
-        </div>
-
-        <div>
-          <label>Price</label>
-          <input
-            type="text"
-            name="price"
-            placeholder="Example: From £45"
-          >
-        </div>
-
-        <div>
-          <label>Duration</label>
-          <input
-            type="text"
-            name="duration"
-            placeholder="Example: 3 hours"
-          >
-        </div>
-
-        <div class="full">
-          <label>Description</label>
-          <textarea name="description"></textarea>
-        </div>
+        <div><label>Experience name</label><input type="text" name="name" required></div>
+        <div><label>Price</label><input type="text" name="price" placeholder="Example: From £45"></div>
+        <div><label>Duration</label><input type="text" name="duration" placeholder="Example: 3 hours"></div>
+        <div class="full"><label>Description</label><textarea name="description"></textarea></div>
       </div>
-
       <button type="submit">Add Experience</button>
     </form>
   </section>
 
   <section class="section">
-    <div class="section-head">
-      <h2>Coffee Products</h2>
-    </div>
-
+    <div class="section-head"><h2>Coffee Marketplace Products</h2></div>
     {% if products %}
     <div class="cards">
       {% for product in products %}
       <div class="item-card">
+        <div class="image-preview">
+          {% if product["image_filename"] %}<img src="{{ url_for('product_image', filename=product['image_filename']) }}" alt="{{ product['name'] }}">{% else %}☕{% endif %}
+        </div>
         <h3>{{ product["name"] }}</h3>
-
-        <p>
-          <strong>{{ product["price"] or "Price not set" }}</strong>
-        </p>
-
-        <p>
-          <strong>Origin:</strong>
-          {{ product["origin"] or "Not specified" }}
-        </p>
-
+        <p><strong>{{ product["price"] or "Price not set" }}</strong></p>
+        <p><strong>Origin:</strong> {{ product["origin"] or "Not specified" }}</p>
         <p>{{ product["description"] or "" }}</p>
-
         <span class="badge">{{ product["stock"] }}</span>
       </div>
       {% endfor %}
     </div>
-    {% else %}
-      <p class="muted">No products have been added yet.</p>
-    {% endif %}
+    {% else %}<p class="muted">No products have been added yet.</p>{% endif %}
 
     <hr style="border:0;border-top:1px solid #eee3db;margin:28px 0;">
-
     <h3>Add Product</h3>
-
     <form method="POST" action="/admin/product/add" enctype="multipart/form-data">
-      <input
-        type="hidden"
-        name="_csrf_token"
-        value="{{ csrf_token() }}"
-      >
-
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="form-grid">
-        <div>
-          <label>Product name</label>
-          <input type="text" name="name" required>
-        </div>
-
-        <div>
-          <label>Price</label>
-          <input type="text" name="price">
-        </div>
-
-        <div>
-          <label>Origin</label>
-          <input type="text" name="origin">
-        </div>
-<div>
-  <label>Product photo</label>
-  <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-</div>
-        <div>
-          <label>Stock status</label>
-          <select name="stock">
-            <option value="In stock">In stock</option>
-            <option value="Sold out">Sold out</option>
-          </select>
-        </div>
-
-        <div class="full">
-          <label>Description</label>
-          <textarea name="description"></textarea>
-        </div>
+        <div><label>Product name</label><input type="text" name="name" required></div>
+        <div><label>Price</label><input type="text" name="price"></div>
+        <div><label>Origin</label><input type="text" name="origin"></div>
+        <div><label>Product photo</label><input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></div>
+        <div><label>Stock status</label><select name="stock"><option value="In stock">In stock</option><option value="Sold out">Sold out</option></select></div>
+        <div class="full"><label>Description</label><textarea name="description"></textarea></div>
       </div>
-
       <button type="submit">Add Product</button>
     </form>
   </section>
 
   <section class="section">
-    <div class="section-head">
-      <h2>Customer Enquiries</h2>
-    </div>
-
+    <div class="section-head"><h2>Customer Enquiries</h2></div>
     {% if enquiries %}
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Contact</th>
-            <th>Interest</th>
-            <th>Status</th>
-            <th>Created</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {% for enquiry in enquiries %}
-          <tr>
-            <td>{{ enquiry["name"] }}</td>
-            <td>{{ enquiry["contact"] }}</td>
-            <td>{{ enquiry["interest"] or "—" }}</td>
-            <td>
-              <span class="badge">{{ enquiry["status"] }}</span>
-            </td>
-            <td>{{ enquiry["created_at"] }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
+        <thead><tr><th>Name</th><th>Contact</th><th>Interest</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody>{% for enquiry in enquiries %}<tr><td>{{ enquiry["name"] }}</td><td>{{ enquiry["contact"] }}</td><td>{{ enquiry["interest"] or "—" }}</td><td><span class="badge">{{ enquiry["status"] }}</span></td><td>{{ enquiry["created_at"] }}</td></tr>{% endfor %}</tbody>
       </table>
     </div>
-    {% else %}
-      <p class="muted">No enquiries have been recorded yet.</p>
-    {% endif %}
+    {% else %}<p class="muted">No enquiries have been recorded yet.</p>{% endif %}
 
     <hr style="border:0;border-top:1px solid #eee3db;margin:28px 0;">
-
     <h3>Add Customer Enquiry</h3>
-
     <form method="POST" action="/admin/enquiry/add">
-      <input
-        type="hidden"
-        name="_csrf_token"
-        value="{{ csrf_token() }}"
-      >
-
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="form-grid">
-        <div>
-          <label>Customer name</label>
-          <input type="text" name="name" required>
-        </div>
-
-        <div>
-          <label>Contact</label>
-          <input
-            type="text"
-            name="contact"
-            placeholder="Phone or email"
-            required
-          >
-        </div>
-
-        <div>
-          <label>Interest</label>
-          <input
-            type="text"
-            name="interest"
-            placeholder="Tour, coffee, group booking..."
-          >
-        </div>
-
-        <div>
-          <label>Status</label>
-          <select name="status">
-            <option value="New">New</option>
-            <option value="Contacted">Contacted</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Closed">Closed</option>
-          </select>
-        </div>
+        <div><label>Customer name</label><input type="text" name="name" required></div>
+        <div><label>Contact</label><input type="text" name="contact" placeholder="Phone or email" required></div>
+        <div><label>Interest</label><input type="text" name="interest" placeholder="Tour, coffee, group booking..."></div>
+        <div><label>Status</label><select name="status"><option value="New">New</option><option value="Contacted">Contacted</option><option value="Confirmed">Confirmed</option><option value="Closed">Closed</option></select></div>
       </div>
-
       <button type="submit">Add Enquiry</button>
     </form>
   </section>
 
   <section class="section security" id="security">
-    <div class="section-head">
-      <h2>Security & Backup</h2>
-    </div>
-
-    <p>
-      Change your admin password regularly and keep a backup of your Big Mug data.
-    </p>
-
-    <p>
-      <a class="btn btn-green" href="/admin/backup">
-        Download Database Backup
-      </a>
-    </p>
-
+    <div class="section-head"><h2>Security & Backup</h2></div>
+    <p>Change your admin password regularly and keep a backup of your Big Mug data.</p>
+    <p><a class="btn btn-green" href="/admin/backup">Download Database Backup</a></p>
     <hr style="border:0;border-top:1px solid #eee3db;margin:28px 0;">
-
     <h3>Change Admin Password</h3>
-
     <form method="POST" action="/admin/password">
-      <input
-        type="hidden"
-        name="_csrf_token"
-        value="{{ csrf_token() }}"
-      >
-
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="form-grid">
-        <div class="full">
-          <label>Current password</label>
-          <input
-            type="password"
-            name="current_password"
-            autocomplete="current-password"
-            required
-          >
-        </div>
-
-        <div>
-          <label>New password</label>
-          <input
-            type="password"
-            name="new_password"
-            minlength="12"
-            autocomplete="new-password"
-            required
-          >
-        </div>
-
-        <div>
-          <label>Confirm new password</label>
-          <input
-            type="password"
-            name="confirm_password"
-            minlength="12"
-            autocomplete="new-password"
-            required
-          >
-        </div>
+        <div class="full"><label>Current password</label><input type="password" name="current_password" autocomplete="current-password" required></div>
+        <div><label>New password</label><input type="password" name="new_password" minlength="12" autocomplete="new-password" required></div>
+        <div><label>Confirm new password</label><input type="password" name="confirm_password" minlength="12" autocomplete="new-password" required></div>
       </div>
-
       <button type="submit">Change Password</button>
     </form>
   </section>
-
 </div>
 
-<footer>
-  Big Mug Coffee Tour — Administration
-</footer>
-
+<footer>Big Mug Coffee & Tours — Administration</footer>
 </body>
 </html>
