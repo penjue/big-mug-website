@@ -13,6 +13,10 @@ PRODUCT_IMAGE_DIR = os.environ.get("BIG_MUG_PRODUCT_IMAGE_DIR", "/var/data/produ
 SITE_IMAGE_DIR = os.environ.get("BIG_MUG_SITE_IMAGE_DIR", "/var/data/site_images")
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 PRODUCT_CATEGORIES = {"Coffee Bags", "Barista Coffee Tools"}
+ADMIN_SECURITY_EMAIL = "penjue@gmail.com"
+PASSWORD_OTP_TTL = 10 * 60
+PASSWORD_OTP_RESEND_WAIT = 60
+PASSWORD_OTP_MAX_ATTEMPTS = 5
 os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
 os.makedirs(SITE_IMAGE_DIR, exist_ok=True)
 
@@ -33,6 +37,10 @@ def send_booking_email(to_email, subject, message):
 
 def admin_email():
     return os.environ.get("BIG_MUG_ADMIN_EMAIL") or os.environ.get("BIG_MUG_SMTP_USER")
+
+def clear_password_otp():
+    for key in ("password_otp_hash","password_otp_expires","password_otp_attempts","password_otp_sent_at"):
+        session.pop(key,None)
 
 def db():
     conn=sqlite3.connect(DB); conn.row_factory=sqlite3.Row; conn.execute("PRAGMA foreign_keys = ON"); return conn
@@ -117,7 +125,7 @@ def record_failed_login(key): LOGIN_ATTEMPTS.setdefault(key,[]).append(time.time
 def health():
     try: conn=db(); conn.execute("SELECT 1"); conn.close(); return {"status":"ok"},200
     except Exception: return {"status":"error"},503
-@app.get("/product-images/<path:filename>")
+@app.get("/product-images/<path:filename")
 def product_image(filename): return send_from_directory(PRODUCT_IMAGE_DIR,filename)
 @app.get("/site-images/<path:filename>")
 def site_image(filename): return send_from_directory(SITE_IMAGE_DIR,filename)
@@ -172,7 +180,7 @@ def logout(): session.clear(); return redirect(url_for("home"))
 def admin():
     conn=db(); bookings=conn.execute("SELECT * FROM bookings ORDER BY created_at DESC").fetchall(); experiences=conn.execute("SELECT * FROM experiences ORDER BY id").fetchall(); products=conn.execute("SELECT * FROM products ORDER BY category,id DESC").fetchall(); enquiries=conn.execute("SELECT * FROM enquiries ORDER BY created_at DESC").fetchall(); logo=conn.execute("SELECT value FROM site_settings WHERE key='logo_filename'").fetchone(); images=conn.execute("SELECT * FROM experience_images ORDER BY experience_id,sort_order,id").fetchall(); conn.close(); galleries={}
     for image in images: galleries.setdefault(image["experience_id"],[]).append(image)
-    return render_template("admin.html",bookings=bookings,experiences=experiences,products=products,enquiries=enquiries,logo_filename=logo["value"] if logo else None,experience_galleries=galleries)
+    return render_template("admin.html",bookings=bookings,experiences=experiences,products=products,enquiries=enquiries,logo_filename=logo["value"] if logo else None,experience_galleries=galleries,admin_security_email=ADMIN_SECURITY_EMAIL,password_otp_pending=bool(session.get("password_otp_hash") and session.get("password_otp_expires",0)>time.time()))
 
 @app.post("/admin/site/logo")
 @login_required
@@ -302,14 +310,40 @@ def add_enquiry():
     if not name or not contact: flash("Customer name and contact are required.","error"); return redirect(url_for("admin")+"#enquiries")
     status=request.form.get("status","New"); status=status if status in {"New","Contacted","Closed"} else "New"; conn=db(); conn.execute("INSERT INTO enquiries(name,contact,interest,status,email,phone,message) VALUES(?,?,?,?,?,?,?)",(name,contact,request.form.get("interest","").strip()[:240],status,"","",request.form.get("message","").strip()[:2000])); conn.commit(); conn.close(); return redirect(url_for("admin")+"#enquiries")
 
+@app.post("/admin/password/code")
+@login_required
+def request_password_code():
+    current=request.form.get("current_password","")
+    conn=db(); user=conn.execute("SELECT * FROM admins WHERE id=?",(session["admin_id"],)).fetchone(); conn.close()
+    if not user or not check_password_hash(user["password_hash"],current):
+        clear_password_otp(); flash("Current password is incorrect. Verification code was not sent.","error"); return redirect(url_for("admin")+"#security")
+    now=time.time(); last=float(session.get("password_otp_sent_at",0) or 0)
+    if now-last<PASSWORD_OTP_RESEND_WAIT:
+        flash("Please wait one minute before requesting another verification code.","error"); return redirect(url_for("admin")+"#security")
+    code=f"{secrets.randbelow(1000000):06d}"
+    if not send_booking_email(ADMIN_SECURITY_EMAIL,"Big Mug Admin Security Code",f"Your Big Mug admin verification code is: {code}\n\nThis code expires in 10 minutes.\n\nIf you did not request a password change, do not share this code and keep your current password unchanged."):
+        clear_password_otp(); flash("The security code could not be sent. Check the SMTP email settings and try again.","error"); return redirect(url_for("admin")+"#security")
+    session["password_otp_hash"]=generate_password_hash(code); session["password_otp_expires"]=now+PASSWORD_OTP_TTL; session["password_otp_attempts"]=0; session["password_otp_sent_at"]=now
+    flash(f"A 6-digit verification code was sent to {ADMIN_SECURITY_EMAIL}. It expires in 10 minutes.","success"); return redirect(url_for("admin")+"#security")
+
 @app.post("/admin/password")
 @login_required
 def change_password():
-    current=request.form.get("current_password",""); new=request.form.get("new_password",""); confirm=request.form.get("confirm_password","")
+    current=request.form.get("current_password",""); code=request.form.get("verification_code","").strip(); new=request.form.get("new_password",""); confirm=request.form.get("confirm_password","")
     if len(new)<12 or new!=confirm: flash("New passwords must match and be at least 12 characters.","error"); return redirect(url_for("admin")+"#security")
     conn=db(); user=conn.execute("SELECT * FROM admins WHERE id=?",(session["admin_id"],)).fetchone()
     if not user or not check_password_hash(user["password_hash"],current): conn.close(); flash("Current password is incorrect.","error"); return redirect(url_for("admin")+"#security")
-    conn.execute("UPDATE admins SET password_hash=? WHERE id=?",(generate_password_hash(new),session["admin_id"])); conn.commit(); conn.close(); flash("Admin password updated.","success"); return redirect(url_for("admin")+"#security")
+    otp_hash=session.get("password_otp_hash"); expires=float(session.get("password_otp_expires",0) or 0); attempts=int(session.get("password_otp_attempts",0) or 0)
+    if not otp_hash or expires<time.time():
+        conn.close(); clear_password_otp(); flash("Your verification code is missing or expired. Request a new code.","error"); return redirect(url_for("admin")+"#security")
+    if attempts>=PASSWORD_OTP_MAX_ATTEMPTS:
+        conn.close(); clear_password_otp(); flash("Too many incorrect verification attempts. Request a new code.","error"); return redirect(url_for("admin")+"#security")
+    if not code or not check_password_hash(otp_hash,code):
+        conn.close(); session["password_otp_attempts"]=attempts+1
+        if attempts+1>=PASSWORD_OTP_MAX_ATTEMPTS: clear_password_otp(); flash("Too many incorrect verification attempts. Request a new code.","error")
+        else: flash("The verification code is incorrect.","error")
+        return redirect(url_for("admin")+"#security")
+    conn.execute("UPDATE admins SET password_hash=? WHERE id=?",(generate_password_hash(new),session["admin_id"])); conn.commit(); conn.close(); clear_password_otp(); flash("Admin password updated successfully with two-step verification.","success"); return redirect(url_for("admin")+"#security")
 
 @app.get("/admin/backup")
 @login_required
