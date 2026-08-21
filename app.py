@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, send_file, send_from_directory
 import sqlite3, os, secrets, time, tempfile, smtplib
 from datetime import timedelta
@@ -34,6 +33,7 @@ LOGIN_ATTEMPTS = {}
 LOGIN_WINDOW = 15 * 60
 LOGIN_LIMIT = 5
 
+
 def send_booking_email(to_email, subject, message):
     smtp_host = os.environ.get("BIG_MUG_SMTP_HOST")
     smtp_port = int(os.environ.get("BIG_MUG_SMTP_PORT", "587"))
@@ -56,18 +56,18 @@ def send_booking_email(to_email, subject, message):
             server.starttls()
             server.login(smtp_user, smtp_password)
             server.send_message(email)
-
         return True
-
     except Exception as e:
         print(f"Email sending failed: {e}")
         return False
+
 
 def db():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
 
 def init_db():
     conn = db()
@@ -114,6 +114,7 @@ def init_db():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     """)
+
     if not conn.execute("SELECT id FROM admins LIMIT 1").fetchone():
         username = os.environ.get("BIG_MUG_ADMIN_USER", "bigmugadmin")
         password = os.environ.get("BIG_MUG_ADMIN_PASSWORD", "BigMug2026!")
@@ -121,29 +122,26 @@ def init_db():
             "INSERT INTO admins(username,password_hash) VALUES(?,?)",
             (username, generate_password_hash(password))
         )
+
     if conn.execute("SELECT COUNT(*) c FROM experiences").fetchone()["c"] == 0:
         conn.executemany(
             "INSERT INTO experiences(name,price,duration,description) VALUES(?,?,?,?)",
             [
-                ("Coffee Farm Experience", "From £45", "3 hours",
-                 "Walk through the coffee journey from farm to cup."),
-                ("Coffee & Adventure Day", "From £85", "Full day",
-                 "Combine Kenyan coffee culture with a curated local adventure."),
-                ("Private Big Mug Experience", "Custom", "Flexible",
-                 "A tailored experience for couples, families, groups or corporate guests.")
+                ("Coffee Farm Experience", "From £45", "3 hours", "Walk through the coffee journey from farm to cup."),
+                ("Coffee & Adventure Day", "From £85", "Full day", "Combine Kenyan coffee culture with a curated local adventure."),
+                ("Private Big Mug Experience", "Custom", "Flexible", "A tailored experience for couples, families, groups or corporate guests.")
             ]
-        )    
-    product_columns = {
-        row["name"]
-        for row in conn.execute("PRAGMA table_info(products)").fetchall()
-    }
-
-    if "image_filename" not in product_columns:
-        conn.execute(
-            "ALTER TABLE products ADD COLUMN image_filename TEXT"
         )
+
+    product_columns = {
+        row["name"] for row in conn.execute("PRAGMA table_info(products)").fetchall()
+    }
+    if "image_filename" not in product_columns:
+        conn.execute("ALTER TABLE products ADD COLUMN image_filename TEXT")
+
     conn.commit()
     conn.close()
+
 
 def login_required(fn):
     @wraps(fn)
@@ -153,12 +151,15 @@ def login_required(fn):
         return fn(*args, **kwargs)
     return wrapped
 
+
 def csrf_token():
     if "_csrf_token" not in session:
         session["_csrf_token"] = secrets.token_urlsafe(32)
     return session["_csrf_token"]
 
+
 app.jinja_env.globals["csrf_token"] = csrf_token
+
 
 @app.before_request
 def protect_posts():
@@ -167,6 +168,7 @@ def protect_posts():
         expected = session.get("_csrf_token", "")
         if not expected or not secrets.compare_digest(submitted, expected):
             abort(400, description="Invalid or missing CSRF token.")
+
 
 @app.after_request
 def security_headers(resp):
@@ -180,8 +182,10 @@ def security_headers(resp):
     )
     return resp
 
+
 def client_key():
     return request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+
 
 def login_blocked(key):
     now = time.time()
@@ -189,8 +193,10 @@ def login_blocked(key):
     LOGIN_ATTEMPTS[key] = attempts
     return len(attempts) >= LOGIN_LIMIT
 
+
 def record_failed_login(key):
     LOGIN_ATTEMPTS.setdefault(key, []).append(time.time())
+
 
 @app.get("/health")
 def health():
@@ -202,27 +208,35 @@ def health():
     except Exception:
         return {"status": "error"}, 503
 
+
+@app.get("/product-images/<path:filename>")
+def product_image(filename):
+    return send_from_directory(PRODUCT_IMAGE_DIR, filename)
+
+
 @app.route("/")
 def home():
     conn = db()
     exps = conn.execute("SELECT * FROM experiences WHERE active=1 ORDER BY id").fetchall()
-    products = conn.execute("SELECT * FROM products ORDER BY id DESC LIMIT 6").fetchall()
+    products = conn.execute("SELECT * FROM products ORDER BY id DESC LIMIT 12").fetchall()
     conn.close()
     return render_template("index.html", experiences=exps, products=products)
 
+
 @app.post("/book")
 def book():
-    name = request.form.get("name","").strip()[:120]
-    email = request.form.get("email","").strip()[:180]
-    phone = request.form.get("phone","").strip()[:60]
-    experience = request.form.get("experience","").strip()[:180]
-    booking_date = request.form.get("booking_date","").strip()[:20]
-    guests = request.form.get("guests","1").strip()
-    notes = request.form.get("notes","").strip()[:1500]
+    name = request.form.get("name", "").strip()[:120]
+    email = request.form.get("email", "").strip()[:180]
+    phone = request.form.get("phone", "").strip()[:60]
+    experience = request.form.get("experience", "").strip()[:180]
+    booking_date = request.form.get("booking_date", "").strip()[:20]
+    guests = request.form.get("guests", "1").strip()
+    notes = request.form.get("notes", "").strip()[:1500]
 
-    if not all([name,email,experience,booking_date,guests]) or "@" not in email:
+    if not all([name, email, experience, booking_date, guests]) or "@" not in email:
         flash("Please complete all required booking fields with a valid email.", "error")
         return redirect(url_for("home") + "#book")
+
     try:
         guests_i = int(guests)
         if guests_i < 1 or guests_i > 100:
@@ -243,18 +257,16 @@ def book():
     cursor = conn.execute(
         """INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes)
            VALUES(?,?,?,?,?,?,?)""",
-        (name,email,phone,experience,booking_date,guests_i,notes)
+        (name, email, phone, experience, booking_date, guests_i, notes)
     )
-
     booking_id = cursor.lastrowid
     booking_ref = f"BM-{booking_id:06d}"
-
     conn.commit()
     conn.close()
 
     email_message = f"""Hello {name},
 
-Thank you for choosing Big Mug Coffee Tour.
+Thank you for choosing Big Mug Coffee & Tours.
 
 We have received your booking request.
 
@@ -268,7 +280,7 @@ Please keep your booking reference for any future communication with us.
 
 We will contact you again once your booking has been confirmed.
 
-Big Mug Coffee Tour
+Big Mug Coffee & Tours
 Discover the journey. Taste the story. Remember the experience.
 """
 
@@ -280,21 +292,18 @@ Discover the journey. Taste the story. Remember the experience.
 
     if email_sent:
         flash(
-            f"Thank you. Your booking request has been received. "
-            f"Your booking reference is {booking_ref}. "
-            "A confirmation email has been sent to you.",
+            f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. A confirmation email has been sent to you.",
             "success"
         )
     else:
         flash(
-            f"Thank you. Your booking request has been received. "
-            f"Your booking reference is {booking_ref}. "
-            "Please keep this reference for future communication.",
+            f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. Please keep this reference for future communication.",
             "success"
         )
-
     return redirect(url_for("home") + "#book")
-@app.route("/login", methods=["GET","POST"])
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     key = client_key()
     if request.method == "POST":
@@ -302,8 +311,8 @@ def login():
             flash("Too many failed login attempts. Please try again later.", "error")
             return render_template("login.html"), 429
 
-        username = request.form.get("username","").strip()[:120]
-        password = request.form.get("password","")
+        username = request.form.get("username", "").strip()[:120]
+        password = request.form.get("password", "")
         conn = db()
         admin = conn.execute("SELECT * FROM admins WHERE username=?", (username,)).fetchone()
         conn.close()
@@ -321,10 +330,12 @@ def login():
         flash("Invalid username or password.", "error")
     return render_template("login.html")
 
+
 @app.get("/logout")
 def logout():
     session.clear()
     return redirect(url_for("home"))
+
 
 @app.get("/admin")
 @login_required
@@ -335,42 +346,38 @@ def admin():
     products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
     enquiries = conn.execute("SELECT * FROM enquiries ORDER BY created_at DESC").fetchall()
     conn.close()
-    return render_template("admin.html", bookings=bookings, experiences=experiences, products=products, enquiries=enquiries)
+    return render_template(
+        "admin.html",
+        bookings=bookings,
+        experiences=experiences,
+        products=products,
+        enquiries=enquiries
+    )
+
 
 @app.post("/admin/booking/<int:item_id>/status")
 @login_required
 def booking_status(item_id):
     status = request.form.get("status", "New")
-
     if status not in {"New", "Confirmed", "Completed", "Cancelled"}:
         abort(400)
 
     conn = db()
-
-    booking = conn.execute(
-        "SELECT * FROM bookings WHERE id=?",
-        (item_id,)
-    ).fetchone()
-
+    booking = conn.execute("SELECT * FROM bookings WHERE id=?", (item_id,)).fetchone()
     if not booking:
         conn.close()
         abort(404)
 
     old_status = booking["status"]
-
-    conn.execute(
-        "UPDATE bookings SET status=? WHERE id=?",
-        (status, item_id)
-    )
+    conn.execute("UPDATE bookings SET status=? WHERE id=?", (status, item_id))
     conn.commit()
     conn.close()
 
     if status == "Confirmed" and old_status != "Confirmed":
         booking_ref = f"BM-{item_id:06d}"
-
         confirmation_message = f"""Hello {booking['name']},
 
-Great news! Your Big Mug Coffee Tour booking has been confirmed.
+Great news! Your Big Mug Coffee & Tours booking has been confirmed.
 
 Booking Reference: {booking_ref}
 Experience: {booking['experience']}
@@ -382,46 +389,44 @@ We look forward to welcoming you and sharing the journey of Kenyan coffee from f
 
 Please keep your booking reference for any future communication with us.
 
-Big Mug Coffee Tour
+Big Mug Coffee & Tours
 Discover the journey. Taste the story. Remember the experience.
 """
-
         email_sent = send_booking_email(
             booking["email"],
             f"Big Mug Booking Confirmed - {booking_ref}",
             confirmation_message
         )
-
         if email_sent:
-            flash(
-                f"Booking {booking_ref} confirmed and confirmation email sent.",
-                "success"
-            )
+            flash(f"Booking {booking_ref} confirmed and confirmation email sent.", "success")
         else:
-            flash(
-                f"Booking {booking_ref} confirmed, but the confirmation email could not be sent.",
-                "error"
-            )
+            flash(f"Booking {booking_ref} confirmed, but the confirmation email could not be sent.", "error")
 
     return redirect(url_for("admin"))
+
 
 @app.post("/admin/experience/add")
 @login_required
 def add_experience():
-    name = request.form.get("name","").strip()[:160]
+    name = request.form.get("name", "").strip()[:160]
     if not name:
         flash("Experience name is required.", "error")
         return redirect(url_for("admin"))
+
     conn = db()
     conn.execute(
         "INSERT INTO experiences(name,price,duration,description) VALUES(?,?,?,?)",
-        (name, request.form.get("price","").strip()[:60],
-         request.form.get("duration","").strip()[:80],
-         request.form.get("description","").strip()[:1200])
+        (
+            name,
+            request.form.get("price", "").strip()[:60],
+            request.form.get("duration", "").strip()[:80],
+            request.form.get("description", "").strip()[:1200]
+        )
     )
     conn.commit()
     conn.close()
     return redirect(url_for("admin"))
+
 
 @app.post("/admin/product/add")
 @login_required
@@ -440,13 +445,11 @@ def add_product():
 
     if image and image.filename:
         original_name = secure_filename(image.filename)
-
         if "." not in original_name:
             flash("Please upload a JPG, JPEG, PNG or WEBP image.", "error")
             return redirect(url_for("admin"))
 
         extension = original_name.rsplit(".", 1)[1].lower()
-
         if extension not in ALLOWED_IMAGE_EXTENSIONS:
             flash("Please upload a JPG, JPEG, PNG or WEBP image.", "error")
             return redirect(url_for("admin"))
@@ -470,47 +473,54 @@ def add_product():
     )
     conn.commit()
     conn.close()
-
     flash("Product added successfully.", "success")
     return redirect(url_for("admin"))
+
+
 @app.post("/admin/enquiry/add")
 @login_required
 def add_enquiry():
-    name = request.form.get("name","").strip()[:160]
-    contact = request.form.get("contact","").strip()[:180]
+    name = request.form.get("name", "").strip()[:160]
+    contact = request.form.get("contact", "").strip()[:180]
     if not name or not contact:
         flash("Customer name and contact are required.", "error")
         return redirect(url_for("admin"))
-    status = request.form.get("status","New")
-    if status not in {"New","Contacted","Confirmed","Closed"}:
+
+    status = request.form.get("status", "New")
+    if status not in {"New", "Contacted", "Confirmed", "Closed"}:
         status = "New"
+
     conn = db()
     conn.execute(
         "INSERT INTO enquiries(name,contact,interest,status) VALUES(?,?,?,?)",
-        (name, contact, request.form.get("interest","").strip()[:240], status)
+        (name, contact, request.form.get("interest", "").strip()[:240], status)
     )
     conn.commit()
     conn.close()
     return redirect(url_for("admin"))
 
+
 @app.post("/admin/password")
 @login_required
 def change_password():
-    current = request.form.get("current_password","")
-    new = request.form.get("new_password","")
-    confirm = request.form.get("confirm_password","")
+    current = request.form.get("current_password", "")
+    new = request.form.get("new_password", "")
+    confirm = request.form.get("confirm_password", "")
+
     if len(new) < 12:
         flash("New password must be at least 12 characters.", "error")
         return redirect(url_for("admin") + "#security")
     if new != confirm:
         flash("New passwords do not match.", "error")
         return redirect(url_for("admin") + "#security")
+
     conn = db()
-    admin = conn.execute("SELECT * FROM admins WHERE id=?", (session["admin_id"],)).fetchone()
-    if not admin or not check_password_hash(admin["password_hash"], current):
+    admin_user = conn.execute("SELECT * FROM admins WHERE id=?", (session["admin_id"],)).fetchone()
+    if not admin_user or not check_password_hash(admin_user["password_hash"], current):
         conn.close()
         flash("Current password is incorrect.", "error")
         return redirect(url_for("admin") + "#security")
+
     conn.execute(
         "UPDATE admins SET password_hash=? WHERE id=?",
         (generate_password_hash(new), session["admin_id"])
@@ -519,6 +529,7 @@ def change_password():
     conn.close()
     flash("Admin password updated.", "success")
     return redirect(url_for("admin") + "#security")
+
 
 @app.get("/admin/backup")
 @login_required
@@ -532,19 +543,23 @@ def backup_database():
     source.close()
     return send_file(path, as_attachment=True, download_name="big_mug_backup.db")
 
+
 @app.errorhandler(400)
 def bad_request(error):
     return render_template("error.html", code=400, message="That request could not be verified."), 400
+
 
 @app.errorhandler(404)
 def not_found(error):
     return render_template("error.html", code=404, message="Page not found."), 404
 
+
 @app.errorhandler(413)
 def too_large(error):
     return render_template("error.html", code=413, message="The submitted request is too large."), 413
 
+
 init_db()
 
 if __name__ == "__main__":
-    app.run(debug=os.environ.get("FLASK_DEBUG","0") == "1")
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
