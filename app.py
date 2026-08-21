@@ -426,24 +426,53 @@ def add_experience():
 @app.post("/admin/product/add")
 @login_required
 def add_product():
-    name = request.form.get("name","").strip()[:160]
+    name = request.form.get("name", "").strip()[:160]
     if not name:
         flash("Product name is required.", "error")
         return redirect(url_for("admin"))
-    stock = request.form.get("stock","In stock")
-    if stock not in {"In stock","Sold out"}:
+
+    stock = request.form.get("stock", "In stock")
+    if stock not in {"In stock", "Sold out"}:
         stock = "In stock"
+
+    image = request.files.get("image")
+    image_filename = None
+
+    if image and image.filename:
+        original_name = secure_filename(image.filename)
+
+        if "." not in original_name:
+            flash("Please upload a JPG, JPEG, PNG or WEBP image.", "error")
+            return redirect(url_for("admin"))
+
+        extension = original_name.rsplit(".", 1)[1].lower()
+
+        if extension not in ALLOWED_IMAGE_EXTENSIONS:
+            flash("Please upload a JPG, JPEG, PNG or WEBP image.", "error")
+            return redirect(url_for("admin"))
+
+        image_filename = f"{secrets.token_hex(12)}.{extension}"
+        image.save(os.path.join(PRODUCT_IMAGE_DIR, image_filename))
+
     conn = db()
     conn.execute(
-        "INSERT INTO products(name,price,origin,stock,description) VALUES(?,?,?,?,?)",
-        (name, request.form.get("price","").strip()[:60],
-         request.form.get("origin","").strip()[:120], stock,
-         request.form.get("description","").strip()[:1200])
+        """INSERT INTO products
+           (name, price, origin, stock, description, image_filename)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (
+            name,
+            request.form.get("price", "").strip()[:60],
+            request.form.get("origin", "").strip()[:120],
+            stock,
+            request.form.get("description", "").strip()[:1200],
+            image_filename
+        )
     )
     conn.commit()
     conn.close()
-    return redirect(url_for("admin"))
 
+    flash("Product added successfully.", "success")
+    return redirect(url_for("admin"))
 @app.post("/admin/enquiry/add")
 @login_required
 def add_enquiry():
