@@ -7,40 +7,40 @@ from werkzeug.utils import secure_filename
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB = os.environ.get("BIG_MUG_DB_PATH", os.path.join(BASE_DIR, "big_mug.db"))
-PRODUCT_IMAGE_DIR = os.environ.get("BIG_MUG_PRODUCT_IMAGE_DIR", "/var/data/product_images")
-SITE_IMAGE_DIR = os.environ.get("BIG_MUG_SITE_IMAGE_DIR", "/var/data/site_images")
-ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
-PRODUCT_CATEGORIES = {"Coffee Bags", "Barista Coffee Tools"}
-ADMIN_SECURITY_EMAIL = "penjue@gmail.com"
-PASSWORD_OTP_TTL = 10 * 60
-PASSWORD_OTP_RESEND_WAIT = 60
-PASSWORD_OTP_MAX_ATTEMPTS = 5
-os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
-os.makedirs(SITE_IMAGE_DIR, exist_ok=True)
+BASE_DIR=os.path.dirname(os.path.abspath(__file__))
+DB=os.environ.get("BIG_MUG_DB_PATH",os.path.join(BASE_DIR,"big_mug.db"))
+PRODUCT_IMAGE_DIR=os.environ.get("BIG_MUG_PRODUCT_IMAGE_DIR","/var/data/product_images")
+SITE_IMAGE_DIR=os.environ.get("BIG_MUG_SITE_IMAGE_DIR","/var/data/site_images")
+ALLOWED_IMAGE_EXTENSIONS={"jpg","jpeg","png","webp"}
+PRODUCT_CATEGORIES={"Coffee Bags","Barista Coffee Tools"}
+ADMIN_SECURITY_EMAIL="penjue@gmail.com"
+PASSWORD_OTP_TTL=600
+PASSWORD_OTP_RESEND_WAIT=60
+PASSWORD_OTP_MAX_ATTEMPTS=5
+os.makedirs(PRODUCT_IMAGE_DIR,exist_ok=True); os.makedirs(SITE_IMAGE_DIR,exist_ok=True)
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("BIG_MUG_SECRET_KEY") or secrets.token_hex(32)
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("BIG_MUG_HTTPS", "0") == "1", PERMANENT_SESSION_LIFETIME=timedelta(hours=8), MAX_CONTENT_LENGTH=12 * 1024 * 1024)
-if os.environ.get("BIG_MUG_TRUST_PROXY", "0") == "1": app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
-LOGIN_ATTEMPTS = {}; LOGIN_WINDOW = 15 * 60; LOGIN_LIMIT = 5
+app=Flask(__name__)
+app.secret_key=os.environ.get("BIG_MUG_SECRET_KEY") or secrets.token_hex(32)
+app.config.update(SESSION_COOKIE_HTTPONLY=True,SESSION_COOKIE_SAMESITE="Lax",SESSION_COOKIE_SECURE=os.environ.get("BIG_MUG_HTTPS","0")=="1",PERMANENT_SESSION_LIFETIME=timedelta(hours=8),MAX_CONTENT_LENGTH=12*1024*1024)
+if os.environ.get("BIG_MUG_TRUST_PROXY","0")=="1": app.wsgi_app=ProxyFix(app.wsgi_app,x_for=1,x_proto=1)
+LOGIN_ATTEMPTS={}; LOGIN_WINDOW=900; LOGIN_LIMIT=5
 
-def send_booking_email(to_email, subject, message):
-    host=os.environ.get("BIG_MUG_SMTP_HOST"); port=int(os.environ.get("BIG_MUG_SMTP_PORT","587")); user=os.environ.get("BIG_MUG_SMTP_USER"); password=os.environ.get("BIG_MUG_SMTP_PASSWORD"); sender=os.environ.get("BIG_MUG_FROM_EMAIL",user)
+def send_booking_email(to_email,subject,message):
+    host=os.environ.get("BIG_MUG_SMTP_HOST"); port=int(os.environ.get("BIG_MUG_SMTP_PORT","587"))
+    user=os.environ.get("BIG_MUG_SMTP_USER"); password=os.environ.get("BIG_MUG_SMTP_PASSWORD"); sender=os.environ.get("BIG_MUG_FROM_EMAIL",user)
     if not all([host,user,password,sender,to_email]): return False
     try:
         email=EmailMessage(); email["Subject"]=subject; email["From"]=sender; email["To"]=to_email; email.set_content(message)
-        with smtplib.SMTP(host,port,timeout=15) as server: server.starttls(); server.login(user,password); server.send_message(email)
+        with smtplib.SMTP(host,port,timeout=15) as server:
+            server.starttls(); server.login(user,password); server.send_message(email)
         return True
-    except Exception as e: print(f"Email sending failed: {e}"); return False
+    except Exception as e:
+        print(f"Email sending failed: {e}"); return False
 
-def admin_email():
-    return os.environ.get("BIG_MUG_ADMIN_EMAIL") or os.environ.get("BIG_MUG_SMTP_USER")
+def admin_email(): return os.environ.get("BIG_MUG_ADMIN_EMAIL") or os.environ.get("BIG_MUG_SMTP_USER")
 
 def clear_password_otp():
-    for key in ("password_otp_hash","password_otp_expires","password_otp_attempts","password_otp_sent_at"):
-        session.pop(key,None)
+    for key in ("password_otp_hash","password_otp_expires","password_otp_attempts","password_otp_sent_at"): session.pop(key,None)
 
 def db():
     conn=sqlite3.connect(DB); conn.row_factory=sqlite3.Row; conn.execute("PRAGMA foreign_keys = ON"); return conn
@@ -66,17 +66,14 @@ def init_db():
     if "image_filename" not in pc: conn.execute("ALTER TABLE products ADD COLUMN image_filename TEXT")
     if "category" not in pc: conn.execute("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT 'Coffee Bags'")
     ec={r["name"] for r in conn.execute("PRAGMA table_info(experiences)")}
-    if "image_filename" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN image_filename TEXT")
-    if "included" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN included TEXT")
-    if "itinerary" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN itinerary TEXT")
-    if "audience" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN audience TEXT")
-    if "meeting_point" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN meeting_point TEXT")
+    for col in ("image_filename","included","itinerary","audience","meeting_point"):
+        if col not in ec: conn.execute(f"ALTER TABLE experiences ADD COLUMN {col} TEXT")
     qc={r["name"] for r in conn.execute("PRAGMA table_info(enquiries)")}
-    if "email" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN email TEXT")
-    if "phone" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN phone TEXT")
-    if "message" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN message TEXT")
+    for col in ("email","phone","message"):
+        if col not in qc: conn.execute(f"ALTER TABLE enquiries ADD COLUMN {col} TEXT")
     for exp in conn.execute("SELECT id,image_filename FROM experiences WHERE image_filename IS NOT NULL AND image_filename!=''").fetchall():
-        if not conn.execute("SELECT id FROM experience_images WHERE experience_id=? AND filename=?",(exp["id"],exp["image_filename"])).fetchone(): conn.execute("INSERT INTO experience_images(experience_id,filename,sort_order) VALUES(?,?,0)",(exp["id"],exp["image_filename"]))
+        if not conn.execute("SELECT id FROM experience_images WHERE experience_id=? AND filename=?",(exp["id"],exp["image_filename"])).fetchone():
+            conn.execute("INSERT INTO experience_images(experience_id,filename,sort_order) VALUES(?,?,0)",(exp["id"],exp["image_filename"]))
     conn.commit(); conn.close()
 
 def login_required(fn):
@@ -117,7 +114,11 @@ def protect_posts():
 
 @app.after_request
 def security_headers(resp):
-    resp.headers["X-Content-Type-Options"]="nosniff"; resp.headers["X-Frame-Options"]="DENY"; resp.headers["Referrer-Policy"]="strict-origin-when-cross-origin"; resp.headers["Permissions-Policy"]="camera=(), microphone=(), geolocation=()"; resp.headers["Content-Security-Policy"]="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'self'"; return resp
+    resp.headers["X-Content-Type-Options"]="nosniff"; resp.headers["X-Frame-Options"]="DENY"
+    resp.headers["Referrer-Policy"]="strict-origin-when-cross-origin"
+    resp.headers["Permissions-Policy"]="camera=(), microphone=(), geolocation=()"
+    resp.headers["Content-Security-Policy"]="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'self'"
+    return resp
 
 def client_key(): return request.headers.get("X-Forwarded-For",request.remote_addr or "unknown").split(",")[0].strip()
 def login_blocked(key):
@@ -128,12 +129,13 @@ def record_failed_login(key): LOGIN_ATTEMPTS.setdefault(key,[]).append(time.time
 def health():
     try: conn=db(); conn.execute("SELECT 1"); conn.close(); return {"status":"ok"},200
     except Exception: return {"status":"error"},503
+
 @app.get("/product-images/<path:filename>")
 def product_image(filename): return send_from_directory(PRODUCT_IMAGE_DIR,filename)
 @app.get("/site-images/<path:filename>")
 def site_image(filename): return send_from_directory(SITE_IMAGE_DIR,filename)
 
-@app.route("/")
+@app.get("/")
 def home():
     conn=db(); exps=conn.execute("SELECT * FROM experiences WHERE active=1 ORDER BY id").fetchall(); bags=conn.execute("SELECT * FROM products WHERE category='Coffee Bags' ORDER BY id DESC LIMIT 12").fetchall(); tools=conn.execute("SELECT * FROM products WHERE category='Barista Coffee Tools' ORDER BY id DESC LIMIT 12").fetchall(); logo=conn.execute("SELECT value FROM site_settings WHERE key='logo_filename'").fetchone(); images=conn.execute("SELECT * FROM experience_images ORDER BY experience_id,sort_order,id").fetchall(); conn.close()
     galleries={}
@@ -175,6 +177,7 @@ def login():
         if user and check_password_hash(user["password_hash"],request.form.get("password","")): LOGIN_ATTEMPTS.pop(key,None); session.clear(); session.permanent=True; session["admin_id"]=user["id"]; session["username"]=user["username"]; csrf_token(); return redirect(url_for("admin"))
         record_failed_login(key); flash("Invalid username or password.","error")
     return render_template("login.html")
+
 @app.get("/logout")
 def logout(): session.clear(); return redirect(url_for("home"))
 
@@ -202,16 +205,33 @@ def booking_status(item_id):
     if not booking: conn.close(); abort(404)
     old=booking["status"]; conn.execute("UPDATE bookings SET status=? WHERE id=?",(status,item_id)); conn.commit(); conn.close()
     if status!=old:
-        ref=f"BM-{item_id:06d}"
-        time_text=f" at {booking['preferred_time']}" if booking['preferred_time'] else ""
-        if status=="Pending":
-            send_booking_email(booking["email"],f"Big Mug Booking Update - {ref}",f"Hello {booking['name']},\n\nYour Big Mug booking request {ref} is now being reviewed by our team.\n\nExperience: {booking['experience']}\nRequested date: {booking['booking_date']}{time_text}\n\nWe are checking availability and will contact you again as soon as your booking is confirmed.\n\nThank you for your patience and for choosing Big Mug Coffee & Tours.\n\nBig Mug Coffee & Tours")
-        elif status=="Confirmed":
-            send_booking_email(booking["email"],f"Big Mug Booking Confirmed - {ref}",f"Hello {booking['name']},\n\nGreat news — your Big Mug booking {ref} is confirmed for {booking['booking_date']}{time_text}.\n\nExperience: {booking['experience']}\nGuests: {booking['guests']}\n\nWe look forward to welcoming you and sharing the Big Mug coffee experience with you.\n\nBig Mug Coffee & Tours")
-        elif status=="Completed":
-            send_booking_email(booking["email"],f"Thank You from Big Mug - {ref}",f"Hello {booking['name']},\n\nThank you for joining us for your Big Mug experience. We hope you enjoyed discovering the story, people and journey behind every cup.\n\nIt was a pleasure having you with us, and we truly appreciate you choosing Big Mug Coffee & Tours. We would be delighted to welcome you again in the future.\n\nWarm regards,\nBig Mug Coffee & Tours")
-        elif status=="Cancelled":
-            send_booking_email(booking["email"],f"Big Mug Booking Cancelled - {ref}",f"Hello {booking['name']},\n\nWe are sorry to let you know that your Big Mug booking {ref} has been cancelled.\n\nExperience: {booking['experience']}\nRequested date: {booking['booking_date']}{time_text}\n\nWe apologise for any inconvenience this may cause. If you would like to choose another date or discuss another Big Mug experience, please contact us and we will be happy to help.\n\nThank you for your understanding.\n\nBig Mug Coffee & Tours")
+        ref=f"BM-{item_id:06d}"; date=booking["booking_date"]; time_text=f" at {booking['preferred_time']}" if booking["preferred_time"] else ""
+        messages={
+            "Pending":(f"Big Mug Booking Update - {ref}",f"Hello {booking['name']},\n\nYour booking request {ref} is now being reviewed. We are checking availability and will contact you as soon as possible.\n\nBig Mug Coffee & Tours"),
+            "Confirmed":(f"Big Mug Booking Confirmed - {ref}",f"Hello {booking['name']},\n\nYour Big Mug booking {ref} is confirmed for {date}{time_text}.\n\nWe look forward to welcoming you.\n\nBig Mug Coffee & Tours"),
+            "Completed":(f"Thank You from Big Mug - {ref}",f"Hello {booking['name']},\n\nThank you for sharing the Big Mug experience with us. We hope you enjoyed your coffee journey and that the memories stay with you long after the last cup.\n\nIt was a pleasure hosting you, and we would be delighted to welcome you again.\n\nBig Mug Coffee & Tours"),
+            "Cancelled":(f"Big Mug Booking Cancelled - {ref}",f"Hello {booking['name']},\n\nWe are sorry to let you know that booking {ref} has been cancelled. We sincerely apologise for the inconvenience.\n\nIf you would like another date or a different Big Mug experience, please contact us and we will be happy to help.\n\nBig Mug Coffee & Tours")}
+        if status in messages:
+            subject,body=messages[status]; send_booking_email(booking["email"],subject,body)
+    flash("Booking status updated.","success"); return redirect(url_for("admin")+"#bookings")
+
+@app.post("/admin/booking/<int:item_id>/schedule-update")
+@login_required
+def booking_schedule_update(item_id):
+    update_type=request.form.get("update_type","Delay").strip()
+    if update_type not in {"Delay","Time Changed","Date Changed"}: abort(400)
+    new_date=request.form.get("new_date","").strip()[:20]; new_time=request.form.get("new_time","").strip()[:20]; note=request.form.get("update_message","").strip()[:1200]
+    if update_type=="Time Changed" and not new_time: flash("Please enter the new time.","error"); return redirect(url_for("admin")+"#bookings")
+    if update_type=="Date Changed" and not new_date: flash("Please enter the new date.","error"); return redirect(url_for("admin")+"#bookings")
+    if update_type=="Delay" and not (new_time or new_date or note): flash("For a delay, enter a revised time/date or a short message.","error"); return redirect(url_for("admin")+"#bookings")
+    conn=db(); booking=conn.execute("SELECT * FROM bookings WHERE id=?",(item_id,)).fetchone()
+    if not booking: conn.close(); abort(404)
+    old_date=booking["booking_date"]; old_time=booking["preferred_time"] or "Not specified"; final_date=new_date or old_date; final_time=new_time or booking["preferred_time"]
+    if new_date or new_time: conn.execute("UPDATE bookings SET booking_date=?, preferred_time=? WHERE id=?",(final_date,final_time,item_id)); conn.commit()
+    conn.close(); ref=f"BM-{item_id:06d}"; labels={"Delay":"Delay Notice","Time Changed":"Time Change","Date Changed":"Date Change"}
+    body=f"Hello {booking['name']},\n\nWe are contacting you with an important update regarding your Big Mug booking {ref}.\n\nUpdate: {labels[update_type]}\nExperience: {booking['experience']}\nOriginal date: {old_date}\nOriginal time: {old_time}\nRevised date: {final_date}\nRevised time: {final_time or 'Not specified'}\n\n{note or 'We apologise for the inconvenience and appreciate your understanding.'}\n\nYour booking remains confirmed unless we contact you separately to say otherwise. We are sorry for any inconvenience caused and we look forward to welcoming you.\n\nBig Mug Coffee & Tours"
+    sent=send_booking_email(booking["email"],f"Big Mug Booking Schedule Update - {ref}",body)
+    flash("Schedule update sent to the customer successfully." if sent else "The booking was updated, but the email could not be sent. Please check the email settings.","success" if sent else "error")
     return redirect(url_for("admin")+"#bookings")
 
 @app.post("/admin/enquiry/<int:item_id>/status")
@@ -235,8 +255,7 @@ def delete_enquiry(item_id):
 def add_experience():
     name=request.form.get("name","").strip()[:160]
     if not name: flash("Experience name is required.","error"); return redirect(url_for("admin")+"#experiences")
-    conn=db(); cur=conn.execute("INSERT INTO experiences(name,price,duration,description,included,itinerary,audience,meeting_point) VALUES(?,?,?,?,?,?,?,?)",(name,request.form.get("price","").strip()[:60],request.form.get("duration","").strip()[:80],request.form.get("description","").strip()[:1200],request.form.get("included","").strip()[:1600],request.form.get("itinerary","").strip()[:2000],request.form.get("audience","").strip()[:1200],request.form.get("meeting_point","").strip()[:800])); exp_id=cur.lastrowid; conn.commit(); conn.close()
-    uploaded=0
+    conn=db(); cur=conn.execute("INSERT INTO experiences(name,price,duration,description,included,itinerary,audience,meeting_point) VALUES(?,?,?,?,?,?,?,?)",(name,request.form.get("price","").strip()[:60],request.form.get("duration","").strip()[:80],request.form.get("description","").strip()[:1200],request.form.get("included","").strip()[:1600],request.form.get("itinerary","").strip()[:2000],request.form.get("audience","").strip()[:1200],request.form.get("meeting_point","").strip()[:800])); exp_id=cur.lastrowid; conn.commit(); conn.close(); uploaded=0
     for image in request.files.getlist("images")[:8]:
         if image and image.filename:
             filename,error=save_image_upload(image,SITE_IMAGE_DIR)
@@ -326,18 +345,13 @@ def add_enquiry():
 @app.post("/admin/password/code")
 @login_required
 def request_password_code():
-    current=request.form.get("current_password","")
-    conn=db(); user=conn.execute("SELECT * FROM admins WHERE id=?",(session["admin_id"],)).fetchone(); conn.close()
-    if not user or not check_password_hash(user["password_hash"],current):
-        clear_password_otp(); flash("Current password is incorrect. Verification code was not sent.","error"); return redirect(url_for("admin")+"#security")
+    current=request.form.get("current_password",""); conn=db(); user=conn.execute("SELECT * FROM admins WHERE id=?",(session["admin_id"],)).fetchone(); conn.close()
+    if not user or not check_password_hash(user["password_hash"],current): clear_password_otp(); flash("Current password is incorrect. Verification code was not sent.","error"); return redirect(url_for("admin")+"#security")
     now=time.time(); last=float(session.get("password_otp_sent_at",0) or 0)
-    if now-last<PASSWORD_OTP_RESEND_WAIT:
-        flash("Please wait one minute before requesting another verification code.","error"); return redirect(url_for("admin")+"#security")
+    if now-last<PASSWORD_OTP_RESEND_WAIT: flash("Please wait one minute before requesting another verification code.","error"); return redirect(url_for("admin")+"#security")
     code=f"{secrets.randbelow(1000000):06d}"
-    if not send_booking_email(ADMIN_SECURITY_EMAIL,"Big Mug Admin Security Code",f"Your Big Mug admin verification code is: {code}\n\nThis code expires in 10 minutes.\n\nIf you did not request a password change, do not share this code and keep your current password unchanged."):
-        clear_password_otp(); flash("The security code could not be sent. Check the SMTP email settings and try again.","error"); return redirect(url_for("admin")+"#security")
-    session["password_otp_hash"]=generate_password_hash(code); session["password_otp_expires"]=now+PASSWORD_OTP_TTL; session["password_otp_attempts"]=0; session["password_otp_sent_at"]=now
-    flash(f"A 6-digit verification code was sent to {ADMIN_SECURITY_EMAIL}. It expires in 10 minutes.","success"); return redirect(url_for("admin")+"#security")
+    if not send_booking_email(ADMIN_SECURITY_EMAIL,"Big Mug Admin Security Code",f"Your Big Mug admin verification code is: {code}\n\nThis code expires in 10 minutes.\n\nIf you did not request a password change, do not share this code and keep your current password unchanged."): clear_password_otp(); flash("The security code could not be sent. Check the SMTP email settings and try again.","error"); return redirect(url_for("admin")+"#security")
+    session["password_otp_hash"]=generate_password_hash(code); session["password_otp_expires"]=now+PASSWORD_OTP_TTL; session["password_otp_attempts"]=0; session["password_otp_sent_at"]=now; flash(f"A 6-digit verification code was sent to {ADMIN_SECURITY_EMAIL}. It expires in 10 minutes.","success"); return redirect(url_for("admin")+"#security")
 
 @app.post("/admin/password")
 @login_required
@@ -347,10 +361,8 @@ def change_password():
     conn=db(); user=conn.execute("SELECT * FROM admins WHERE id=?",(session["admin_id"],)).fetchone()
     if not user or not check_password_hash(user["password_hash"],current): conn.close(); flash("Current password is incorrect.","error"); return redirect(url_for("admin")+"#security")
     otp_hash=session.get("password_otp_hash"); expires=float(session.get("password_otp_expires",0) or 0); attempts=int(session.get("password_otp_attempts",0) or 0)
-    if not otp_hash or expires<time.time():
-        conn.close(); clear_password_otp(); flash("Your verification code is missing or expired. Request a new code.","error"); return redirect(url_for("admin")+"#security")
-    if attempts>=PASSWORD_OTP_MAX_ATTEMPTS:
-        conn.close(); clear_password_otp(); flash("Too many incorrect verification attempts. Request a new code.","error"); return redirect(url_for("admin")+"#security")
+    if not otp_hash or expires<time.time(): conn.close(); clear_password_otp(); flash("Your verification code is missing or expired. Request a new code.","error"); return redirect(url_for("admin")+"#security")
+    if attempts>=PASSWORD_OTP_MAX_ATTEMPTS: conn.close(); clear_password_otp(); flash("Too many incorrect verification attempts. Request a new code.","error"); return redirect(url_for("admin")+"#security")
     if not code or not check_password_hash(otp_hash,code):
         conn.close(); session["password_otp_attempts"]=attempts+1
         if attempts+1>=PASSWORD_OTP_MAX_ATTEMPTS: clear_password_otp(); flash("Too many incorrect verification attempts. Request a new code.","error")
