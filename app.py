@@ -201,9 +201,17 @@ def booking_status(item_id):
     conn=db(); booking=conn.execute("SELECT * FROM bookings WHERE id=?",(item_id,)).fetchone()
     if not booking: conn.close(); abort(404)
     old=booking["status"]; conn.execute("UPDATE bookings SET status=? WHERE id=?",(status,item_id)); conn.commit(); conn.close()
-    if status=="Confirmed" and old!="Confirmed":
+    if status!=old:
+        ref=f"BM-{item_id:06d}"
         time_text=f" at {booking['preferred_time']}" if booking['preferred_time'] else ""
-        send_booking_email(booking["email"],f"Big Mug Booking Confirmed - BM-{item_id:06d}",f"Hello {booking['name']},\n\nYour Big Mug booking BM-{item_id:06d} is confirmed for {booking['booking_date']}{time_text}.\n\nWe look forward to welcoming you.")
+        if status=="Pending":
+            send_booking_email(booking["email"],f"Big Mug Booking Update - {ref}",f"Hello {booking['name']},\n\nYour Big Mug booking request {ref} is now being reviewed by our team.\n\nExperience: {booking['experience']}\nRequested date: {booking['booking_date']}{time_text}\n\nWe are checking availability and will contact you again as soon as your booking is confirmed.\n\nThank you for your patience and for choosing Big Mug Coffee & Tours.\n\nBig Mug Coffee & Tours")
+        elif status=="Confirmed":
+            send_booking_email(booking["email"],f"Big Mug Booking Confirmed - {ref}",f"Hello {booking['name']},\n\nGreat news — your Big Mug booking {ref} is confirmed for {booking['booking_date']}{time_text}.\n\nExperience: {booking['experience']}\nGuests: {booking['guests']}\n\nWe look forward to welcoming you and sharing the Big Mug coffee experience with you.\n\nBig Mug Coffee & Tours")
+        elif status=="Completed":
+            send_booking_email(booking["email"],f"Thank You from Big Mug - {ref}",f"Hello {booking['name']},\n\nThank you for joining us for your Big Mug experience. We hope you enjoyed discovering the story, people and journey behind every cup.\n\nIt was a pleasure having you with us, and we truly appreciate you choosing Big Mug Coffee & Tours. We would be delighted to welcome you again in the future.\n\nWarm regards,\nBig Mug Coffee & Tours")
+        elif status=="Cancelled":
+            send_booking_email(booking["email"],f"Big Mug Booking Cancelled - {ref}",f"Hello {booking['name']},\n\nWe are sorry to let you know that your Big Mug booking {ref} has been cancelled.\n\nExperience: {booking['experience']}\nRequested date: {booking['booking_date']}{time_text}\n\nWe apologise for any inconvenience this may cause. If you would like to choose another date or discuss another Big Mug experience, please contact us and we will be happy to help.\n\nThank you for your understanding.\n\nBig Mug Coffee & Tours")
     return redirect(url_for("admin")+"#bookings")
 
 @app.post("/admin/enquiry/<int:item_id>/status")
