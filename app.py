@@ -9,14 +9,13 @@ from functools import wraps
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB = os.environ.get("BIG_MUG_DB_PATH", os.path.join(BASE_DIR, "big_mug.db"))
-PRODUCT_IMAGE_DIR = os.environ.get(
-    "BIG_MUG_PRODUCT_IMAGE_DIR",
-    "/var/data/product_images"
-)
-
+PRODUCT_IMAGE_DIR = os.environ.get("BIG_MUG_PRODUCT_IMAGE_DIR", "/var/data/product_images")
+SITE_IMAGE_DIR = os.environ.get("BIG_MUG_SITE_IMAGE_DIR", "/var/data/site_images")
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 
 os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
+os.makedirs(SITE_IMAGE_DIR, exist_ok=True)
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("BIG_MUG_SECRET_KEY") or secrets.token_hex(32)
 app.config.update(
@@ -51,7 +50,6 @@ def send_booking_email(to_email, subject, message):
         email["From"] = from_email
         email["To"] = to_email
         email.set_content(message)
-
         with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
             server.starttls()
             server.login(smtp_user, smtp_password)
@@ -113,6 +111,10 @@ def init_db():
         status TEXT NOT NULL DEFAULT 'New',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    );
     """)
 
     if not conn.execute("SELECT id FROM admins LIMIT 1").fetchone():
@@ -133,11 +135,13 @@ def init_db():
             ]
         )
 
-    product_columns = {
-        row["name"] for row in conn.execute("PRAGMA table_info(products)").fetchall()
-    }
+    product_columns = {row["name"] for row in conn.execute("PRAGMA table_info(products)").fetchall()}
     if "image_filename" not in product_columns:
         conn.execute("ALTER TABLE products ADD COLUMN image_filename TEXT")
+
+    experience_columns = {row["name"] for row in conn.execute("PRAGMA table_info(experiences)").fetchall()}
+    if "image_filename" not in experience_columns:
+        conn.execute("ALTER TABLE experiences ADD COLUMN image_filename TEXT")
 
     conn.commit()
     conn.close()
@@ -159,6 +163,40 @@ def csrf_token():
 
 
 app.jinja_env.globals["csrf_token"] = csrf_token
+
+
+def get_setting(key, default=None):
+    conn = db()
+    row = conn.execute("SELECT value FROM site_settings WHERE key=?", (key,)).fetchone()
+    conn.close()
+    return row["value"] if row else default
+
+
+def set_setting(key, value):
+    conn = db()
+    conn.execute(
+        "INSERT INTO site_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (key, value)
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_image_upload(image, destination):
+    if not image or not image.filename:
+        return None, "Please choose an image to upload."
+
+    original_name = secure_filename(image.filename)
+    if "." not in original_name:
+        return None, "Please upload a JPG, JPEG, PNG or WEBP image."
+
+    extension = original_name.rsplit(".", 1)[1].lower()
+    if extension not in ALLOWED_IMAGE_EXTENSIONS:
+        return None, "Please upload a JPG, JPEG, PNG or WEBP image."
+
+    filename = f"{secrets.token_hex(12)}.{extension}"
+    image.save(os.path.join(destination, filename))
+    return filename, None
 
 
 @app.before_request
@@ -214,13 +252,20 @@ def product_image(filename):
     return send_from_directory(PRODUCT_IMAGE_DIR, filename)
 
 
+@app.get("/site-images/<path:filename>")
+def site_image(filename):
+    return send_from_directory(SITE_IMAGE_DIR, filename)
+
+
 @app.route("/")
 def home():
     conn = db()
     exps = conn.execute("SELECT * FROM experiences WHERE active=1 ORDER BY id").fetchall()
     products = conn.execute("SELECT * FROM products ORDER BY id DESC LIMIT 12").fetchall()
+    logo_row = conn.execute("SELECT value FROM site_settings WHERE key='logo_filename'").fetchone()
     conn.close()
-    return render_template("index.html", experiences=exps, products=products)
+    logo_filename = logo_row["value"] if logo_row else None
+    return render_template("index.html", experiences=exps, products=products, logo_filename=logo_filename)
 
 
 @app.post("/book")
@@ -246,9 +291,7 @@ def book():
         return redirect(url_for("home") + "#book")
 
     conn = db()
-    valid_exp = conn.execute(
-        "SELECT id FROM experiences WHERE name=? AND active=1", (experience,)
-    ).fetchone()
+    valid_exp = conn.execute("SELECT id FROM experiences WHERE name=? AND active=1", (experience,)).fetchone()
     if not valid_exp:
         conn.close()
         flash("Please choose a currently available experience.", "error")
@@ -284,22 +327,11 @@ Big Mug Coffee & Tours
 Discover the journey. Taste the story. Remember the experience.
 """
 
-    email_sent = send_booking_email(
-        email,
-        f"Big Mug Booking Received - {booking_ref}",
-        email_message
-    )
-
+    email_sent = send_booking_email(email, f"Big Mug Booking Received - {booking_ref}", email_message)
     if email_sent:
-        flash(
-            f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. A confirmation email has been sent to you.",
-            "success"
-        )
+        flash(f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. A confirmation email has been sent to you.", "success")
     else:
-        flash(
-            f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. Please keep this reference for future communication.",
-            "success"
-        )
+        flash(f"Thank you. Your booking request has been received. Your booking reference is {booking_ref}. Please keep this reference for future communication.", "success")
     return redirect(url_for("home") + "#book")
 
 
@@ -314,15 +346,15 @@ def login():
         username = request.form.get("username", "").strip()[:120]
         password = request.form.get("password", "")
         conn = db()
-        admin = conn.execute("SELECT * FROM admins WHERE username=?", (username,)).fetchone()
+        admin_user = conn.execute("SELECT * FROM admins WHERE username=?", (username,)).fetchone()
         conn.close()
 
-        if admin and check_password_hash(admin["password_hash"], password):
+        if admin_user and check_password_hash(admin_user["password_hash"], password):
             LOGIN_ATTEMPTS.pop(key, None)
             session.clear()
             session.permanent = True
-            session["admin_id"] = admin["id"]
-            session["username"] = admin["username"]
+            session["admin_id"] = admin_user["id"]
+            session["username"] = admin_user["username"]
             csrf_token()
             return redirect(url_for("admin"))
 
@@ -342,17 +374,52 @@ def logout():
 def admin():
     conn = db()
     bookings = conn.execute("SELECT * FROM bookings ORDER BY created_at DESC").fetchall()
-    experiences = conn.execute("SELECT * FROM experiences ORDER BY id DESC").fetchall()
+    experiences = conn.execute("SELECT * FROM experiences ORDER BY id ASC").fetchall()
     products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
     enquiries = conn.execute("SELECT * FROM enquiries ORDER BY created_at DESC").fetchall()
+    logo_row = conn.execute("SELECT value FROM site_settings WHERE key='logo_filename'").fetchone()
     conn.close()
+    logo_filename = logo_row["value"] if logo_row else None
     return render_template(
         "admin.html",
         bookings=bookings,
         experiences=experiences,
         products=products,
-        enquiries=enquiries
+        enquiries=enquiries,
+        logo_filename=logo_filename
     )
+
+
+@app.post("/admin/site/logo")
+@login_required
+def update_logo():
+    filename, error = save_image_upload(request.files.get("logo"), SITE_IMAGE_DIR)
+    if error:
+        flash(error, "error")
+        return redirect(url_for("admin") + "#branding")
+    set_setting("logo_filename", filename)
+    flash("Website logo updated successfully.", "success")
+    return redirect(url_for("admin") + "#branding")
+
+
+@app.post("/admin/experience/<int:item_id>/image")
+@login_required
+def update_experience_image(item_id):
+    filename, error = save_image_upload(request.files.get("image"), SITE_IMAGE_DIR)
+    if error:
+        flash(error, "error")
+        return redirect(url_for("admin") + "#experiences")
+
+    conn = db()
+    exists = conn.execute("SELECT id FROM experiences WHERE id=?", (item_id,)).fetchone()
+    if not exists:
+        conn.close()
+        abort(404)
+    conn.execute("UPDATE experiences SET image_filename=? WHERE id=?", (filename, item_id))
+    conn.commit()
+    conn.close()
+    flash("Experience photo updated successfully.", "success")
+    return redirect(url_for("admin") + "#experiences")
 
 
 @app.post("/admin/booking/<int:item_id>/status")
@@ -392,11 +459,7 @@ Please keep your booking reference for any future communication with us.
 Big Mug Coffee & Tours
 Discover the journey. Taste the story. Remember the experience.
 """
-        email_sent = send_booking_email(
-            booking["email"],
-            f"Big Mug Booking Confirmed - {booking_ref}",
-            confirmation_message
-        )
+        email_sent = send_booking_email(booking["email"], f"Big Mug Booking Confirmed - {booking_ref}", confirmation_message)
         if email_sent:
             flash(f"Booking {booking_ref} confirmed and confirmation email sent.", "success")
         else:
@@ -425,7 +488,7 @@ def add_experience():
     )
     conn.commit()
     conn.close()
-    return redirect(url_for("admin"))
+    return redirect(url_for("admin") + "#experiences")
 
 
 @app.post("/admin/product/add")
@@ -440,22 +503,13 @@ def add_product():
     if stock not in {"In stock", "Sold out"}:
         stock = "In stock"
 
-    image = request.files.get("image")
     image_filename = None
-
+    image = request.files.get("image")
     if image and image.filename:
-        original_name = secure_filename(image.filename)
-        if "." not in original_name:
-            flash("Please upload a JPG, JPEG, PNG or WEBP image.", "error")
+        image_filename, error = save_image_upload(image, PRODUCT_IMAGE_DIR)
+        if error:
+            flash(error, "error")
             return redirect(url_for("admin"))
-
-        extension = original_name.rsplit(".", 1)[1].lower()
-        if extension not in ALLOWED_IMAGE_EXTENSIONS:
-            flash("Please upload a JPG, JPEG, PNG or WEBP image.", "error")
-            return redirect(url_for("admin"))
-
-        image_filename = f"{secrets.token_hex(12)}.{extension}"
-        image.save(os.path.join(PRODUCT_IMAGE_DIR, image_filename))
 
     conn = db()
     conn.execute(
@@ -521,10 +575,7 @@ def change_password():
         flash("Current password is incorrect.", "error")
         return redirect(url_for("admin") + "#security")
 
-    conn.execute(
-        "UPDATE admins SET password_hash=? WHERE id=?",
-        (generate_password_hash(new), session["admin_id"])
-    )
+    conn.execute("UPDATE admins SET password_hash=? WHERE id=?", (generate_password_hash(new), session["admin_id"]))
     conn.commit()
     conn.close()
     flash("Admin password updated.", "success")
