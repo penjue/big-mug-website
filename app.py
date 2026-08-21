@@ -125,7 +125,7 @@ def record_failed_login(key): LOGIN_ATTEMPTS.setdefault(key,[]).append(time.time
 def health():
     try: conn=db(); conn.execute("SELECT 1"); conn.close(); return {"status":"ok"},200
     except Exception: return {"status":"error"},503
-@app.get("/product-images/<path:filename")
+@app.get("/product-images/<path:filename>")
 def product_image(filename): return send_from_directory(PRODUCT_IMAGE_DIR,filename)
 @app.get("/site-images/<path:filename>")
 def site_image(filename): return send_from_directory(SITE_IMAGE_DIR,filename)
