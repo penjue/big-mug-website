@@ -24,12 +24,15 @@ LOGIN_ATTEMPTS = {}; LOGIN_WINDOW = 15 * 60; LOGIN_LIMIT = 5
 
 def send_booking_email(to_email, subject, message):
     host=os.environ.get("BIG_MUG_SMTP_HOST"); port=int(os.environ.get("BIG_MUG_SMTP_PORT","587")); user=os.environ.get("BIG_MUG_SMTP_USER"); password=os.environ.get("BIG_MUG_SMTP_PASSWORD"); sender=os.environ.get("BIG_MUG_FROM_EMAIL",user)
-    if not all([host,user,password,sender]): return False
+    if not all([host,user,password,sender,to_email]): return False
     try:
         email=EmailMessage(); email["Subject"]=subject; email["From"]=sender; email["To"]=to_email; email.set_content(message)
         with smtplib.SMTP(host,port,timeout=15) as server: server.starttls(); server.login(user,password); server.send_message(email)
         return True
     except Exception as e: print(f"Email sending failed: {e}"); return False
+
+def admin_email():
+    return os.environ.get("BIG_MUG_ADMIN_EMAIL") or os.environ.get("BIG_MUG_SMTP_USER")
 
 def db():
     conn=sqlite3.connect(DB); conn.row_factory=sqlite3.Row; conn.execute("PRAGMA foreign_keys = ON"); return conn
@@ -53,7 +56,10 @@ def init_db():
     if "category" not in pc: conn.execute("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT 'Coffee Bags'")
     ec={r["name"] for r in conn.execute("PRAGMA table_info(experiences)")}
     if "image_filename" not in ec: conn.execute("ALTER TABLE experiences ADD COLUMN image_filename TEXT")
-    # Migrate the old single experience photo into the new gallery without duplicating it.
+    qc={r["name"] for r in conn.execute("PRAGMA table_info(enquiries)")}
+    if "email" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN email TEXT")
+    if "phone" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN phone TEXT")
+    if "message" not in qc: conn.execute("ALTER TABLE enquiries ADD COLUMN message TEXT")
     for exp in conn.execute("SELECT id,image_filename FROM experiences WHERE image_filename IS NOT NULL AND image_filename!=''").fetchall():
         if not conn.execute("SELECT id FROM experience_images WHERE experience_id=? AND filename=?",(exp["id"],exp["image_filename"])).fetchone(): conn.execute("INSERT INTO experience_images(experience_id,filename,sort_order) VALUES(?,?,0)",(exp["id"],exp["image_filename"]))
     conn.commit(); conn.close()
@@ -129,7 +135,21 @@ def book():
     if not conn.execute("SELECT id FROM experiences WHERE name=? AND active=1",(experience,)).fetchone(): conn.close(); flash("Please choose a currently available experience.","error"); return redirect(url_for("home")+"#book")
     cur=conn.execute("INSERT INTO bookings(name,email,phone,experience,booking_date,guests,notes) VALUES(?,?,?,?,?,?,?)",(name,email,phone,experience,date,guests,notes)); ref=f"BM-{cur.lastrowid:06d}"; conn.commit(); conn.close()
     msg=f"Hello {name},\n\nThank you for choosing Big Mug Coffee & Tours.\n\nBooking Reference: {ref}\nExperience: {experience}\nPreferred Date: {date}\nNumber of Guests: {guests}\nStatus: Pending Confirmation\n\nWe will contact you once your booking is confirmed.\n\nBig Mug Coffee & Tours"
-    send_booking_email(email,f"Big Mug Booking Received - {ref}",msg); flash(f"Thank you. Your booking request has been received. Your booking reference is {ref}.","success"); return redirect(url_for("home")+"#book")
+    send_booking_email(email,f"Big Mug Booking Received - {ref}",msg)
+    notify=admin_email()
+    if notify: send_booking_email(notify,f"[BOOKING] New Big Mug request - {ref}",f"New booking request\n\nReference: {ref}\nCustomer: {name}\nEmail: {email}\nPhone: {phone or 'Not provided'}\nExperience: {experience}\nPreferred date: {date}\nGuests: {guests}\nNotes: {notes or 'None'}\n\nReview this in Admin > Booking Requests.")
+    flash(f"Thank you. Your booking request has been received. Your booking reference is {ref}.","success"); return redirect(url_for("home")+"#book")
+
+@app.post("/enquire")
+def enquire():
+    name=request.form.get("name","").strip()[:120]; email=request.form.get("email","").strip()[:180]; phone=request.form.get("phone","").strip()[:60]; interest=request.form.get("interest","").strip()[:240]; message=request.form.get("message","").strip()[:2000]
+    if not name or not email or "@" not in email or not message: flash("Please enter your name, a valid email and your enquiry.","error"); return redirect(url_for("home")+"#enquire")
+    contact=email if not phone else f"{email} / {phone}"
+    conn=db(); cur=conn.execute("INSERT INTO enquiries(name,contact,interest,status,email,phone,message) VALUES(?,?,?,?,?,?,?)",(name,contact,interest,"New",email,phone,message)); ref=f"EQ-{cur.lastrowid:06d}"; conn.commit(); conn.close()
+    send_booking_email(email,f"Big Mug Enquiry Received - {ref}",f"Hello {name},\n\nThank you for contacting Big Mug Coffee & Tours. We have received your enquiry ({ref}) and will respond as soon as possible.\n\nBig Mug Coffee & Tours")
+    notify=admin_email()
+    if notify: send_booking_email(notify,f"[ENQUIRY] New Big Mug message - {ref}",f"New customer enquiry\n\nReference: {ref}\nCustomer: {name}\nEmail: {email}\nPhone: {phone or 'Not provided'}\nInterest: {interest or 'General enquiry'}\nMessage:\n{message}\n\nReview this in Admin > Customer Enquiries.")
+    flash(f"Thank you. Your enquiry has been sent. Reference: {ref}.","success"); return redirect(url_for("home")+"#enquire")
 
 @app.route("/login",methods=["GET","POST"])
 def login():
@@ -167,7 +187,23 @@ def booking_status(item_id):
     if not booking: conn.close(); abort(404)
     old=booking["status"]; conn.execute("UPDATE bookings SET status=? WHERE id=?",(status,item_id)); conn.commit(); conn.close()
     if status=="Confirmed" and old!="Confirmed": send_booking_email(booking["email"],f"Big Mug Booking Confirmed - BM-{item_id:06d}",f"Hello {booking['name']},\n\nYour Big Mug booking BM-{item_id:06d} is confirmed for {booking['booking_date']}.\n\nWe look forward to welcoming you.")
-    return redirect(url_for("admin"))
+    return redirect(url_for("admin")+"#bookings")
+
+@app.post("/admin/enquiry/<int:item_id>/status")
+@login_required
+def enquiry_status(item_id):
+    status=request.form.get("status","New")
+    if status not in {"New","Contacted","Closed"}: abort(400)
+    conn=db()
+    if not conn.execute("SELECT id FROM enquiries WHERE id=?",(item_id,)).fetchone(): conn.close(); abort(404)
+    conn.execute("UPDATE enquiries SET status=? WHERE id=?",(status,item_id)); conn.commit(); conn.close(); flash("Enquiry status updated.","success"); return redirect(url_for("admin")+"#enquiries")
+
+@app.post("/admin/enquiry/<int:item_id>/delete")
+@login_required
+def delete_enquiry(item_id):
+    conn=db()
+    if not conn.execute("SELECT id FROM enquiries WHERE id=?",(item_id,)).fetchone(): conn.close(); abort(404)
+    conn.execute("DELETE FROM enquiries WHERE id=?",(item_id,)); conn.commit(); conn.close(); flash("Enquiry deleted.","success"); return redirect(url_for("admin")+"#enquiries")
 
 @app.post("/admin/experience/add")
 @login_required
@@ -259,8 +295,8 @@ def delete_product(item_id):
 @login_required
 def add_enquiry():
     name=request.form.get("name","").strip()[:160]; contact=request.form.get("contact","").strip()[:180]
-    if not name or not contact: flash("Customer name and contact are required.","error"); return redirect(url_for("admin"))
-    status=request.form.get("status","New"); status=status if status in {"New","Contacted","Confirmed","Closed"} else "New"; conn=db(); conn.execute("INSERT INTO enquiries(name,contact,interest,status) VALUES(?,?,?,?)",(name,contact,request.form.get("interest","").strip()[:240],status)); conn.commit(); conn.close(); return redirect(url_for("admin"))
+    if not name or not contact: flash("Customer name and contact are required.","error"); return redirect(url_for("admin")+"#enquiries")
+    status=request.form.get("status","New"); status=status if status in {"New","Contacted","Closed"} else "New"; conn=db(); conn.execute("INSERT INTO enquiries(name,contact,interest,status,email,phone,message) VALUES(?,?,?,?,?,?,?)",(name,contact,request.form.get("interest","").strip()[:240],status,"","",request.form.get("message","").strip()[:2000])); conn.commit(); conn.close(); return redirect(url_for("admin")+"#enquiries")
 
 @app.post("/admin/password")
 @login_required
