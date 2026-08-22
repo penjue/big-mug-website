@@ -42,14 +42,12 @@ def public_footer_html():
 
 
 def enhance_public_home(page):
-    # Add the main public contact + testimonial block exactly once.
     if "id='contact-trust'" not in page and 'id="contact-trust"' not in page:
         public = timeline.public_trust_html()
         marker = '<section class="enquiry" id="enquire">'
         if marker in page:
             page = page.replace(marker, public + marker, 1)
 
-    # Add Contact to the public navigation exactly once.
     if 'href="#contact-trust">Contact</a>' not in page:
         page = page.replace(
             '<a href="#enquire">Enquire</a><a class="cta"',
@@ -57,7 +55,6 @@ def enhance_public_home(page):
             1,
         )
 
-    # Replace the old hard-coded footer contact/social blocks with live Admin values.
     old_footer = (
         '<div><b>Contact</b><p>Nairobi, Kenya</p><p>Bookings and product enquiries available.</p></div>'
         '<div><b>Follow Us</b><p>Instagram</p><p>Facebook</p></div>'
@@ -68,8 +65,6 @@ def enhance_public_home(page):
     return page
 
 
-# Wrap the actual home view so public contact details always render even if a
-# response hook is skipped by another layer.
 _original_home = app.view_functions['home']
 
 
@@ -86,8 +81,6 @@ def home_with_public_contact(*args, **kwargs):
 app.view_functions['home'] = home_with_public_contact
 
 
-# Keep the booking inbox open and prominent, but make the remaining admin
-# areas collapsible so the dashboard stays clean on mobile and desktop.
 @app.after_request
 def compact_admin_sections(response):
     if request_path_is_admin() and response.content_type and 'text/html' in response.content_type:
@@ -102,18 +95,17 @@ def compact_admin_sections(response):
 .compact-admin-body{padding:0 20px 20px}
 .compact-admin-section.is-collapsed .compact-admin-body{display:none}
 .compact-admin-section.is-collapsed .compact-admin-head{padding-top:13px;padding-bottom:13px}
-/* Contact/Reviews now follows the same black-and-gold visual system. */
 #contact-reviews.compact-admin-section{background:#0f0d0a!important;color:#f5ead2!important;border:1px solid #5f481d!important}
-#contact-reviews h2,#contact-reviews h3{color:#f0cf82!important}
+#contact-reviews h2{color:#f0cf82!important}
 #contact-reviews .muted{color:#d5c7ad!important}
-#contact-reviews label{color:#f5ead2}
-/* The compact wrapper changed form nesting; restore high-contrast labels for
-   top-level admin forms while preserving black labels on gold edit cards. */
 #experiences .compact-admin-body>form label,
 #products .compact-admin-body>form label,
 #branding .compact-admin-body>form label,
-#security .compact-admin-body>form label,
-#contact-reviews .compact-admin-body>form label{color:#fff!important}
+#security .compact-admin-body>form label{color:#fff!important}
+/* Contact forms sit on light inner cards, so use dark text for maximum contrast. */
+#contact-reviews .compact-admin-body form h3,
+#contact-reviews .compact-admin-body form label,
+#contact-reviews .compact-admin-body form .muted{color:#3b2a1f!important}
 @media(max-width:700px){
   .compact-admin-head{padding:11px 14px;min-height:58px}
   .compact-admin-section.is-collapsed .compact-admin-head{padding-top:11px;padding-bottom:11px}
