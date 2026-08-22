@@ -95,14 +95,31 @@ def compact_admin_sections(response):
         style = """
 <style>
 .compact-admin-section{padding:0!important;overflow:hidden}
-.compact-admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;cursor:pointer}
+.compact-admin-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 20px;cursor:pointer;min-height:64px}
 .compact-admin-head>.head{flex:1;margin:0}
 .compact-admin-head>h2{margin:0;flex:1}
-.compact-admin-toggle{flex:0 0 auto;background:#f0cf82!important;color:#15120e!important;border:1px solid #8b6b2d!important;padding:8px 13px!important;font-size:.82rem}
+.compact-admin-toggle{flex:0 0 auto;background:#f0cf82!important;color:#15120e!important;border:1px solid #8b6b2d!important;padding:7px 12px!important;font-size:.82rem}
 .compact-admin-body{padding:0 20px 20px}
 .compact-admin-section.is-collapsed .compact-admin-body{display:none}
-.compact-admin-section.is-collapsed .compact-admin-head{padding-bottom:18px}
-@media(max-width:700px){.compact-admin-head{padding:15px 14px}.compact-admin-body{padding:0 14px 15px}.compact-admin-toggle{padding:7px 11px!important}}
+.compact-admin-section.is-collapsed .compact-admin-head{padding-top:13px;padding-bottom:13px}
+/* Contact/Reviews now follows the same black-and-gold visual system. */
+#contact-reviews.compact-admin-section{background:#0f0d0a!important;color:#f5ead2!important;border:1px solid #5f481d!important}
+#contact-reviews h2,#contact-reviews h3{color:#f0cf82!important}
+#contact-reviews .muted{color:#d5c7ad!important}
+#contact-reviews label{color:#f5ead2}
+/* The compact wrapper changed form nesting; restore high-contrast labels for
+   top-level admin forms while preserving black labels on gold edit cards. */
+#experiences .compact-admin-body>form label,
+#products .compact-admin-body>form label,
+#branding .compact-admin-body>form label,
+#security .compact-admin-body>form label,
+#contact-reviews .compact-admin-body>form label{color:#fff!important}
+@media(max-width:700px){
+  .compact-admin-head{padding:11px 14px;min-height:58px}
+  .compact-admin-section.is-collapsed .compact-admin-head{padding-top:11px;padding-bottom:11px}
+  .compact-admin-body{padding:0 14px 15px}
+  .compact-admin-toggle{padding:7px 11px!important}
+}
 </style>
 """
         script = """
