@@ -84,3 +84,77 @@ def home_with_public_contact(*args, **kwargs):
 
 
 app.view_functions['home'] = home_with_public_contact
+
+
+# Keep the booking inbox open and prominent, but make the remaining admin
+# areas collapsible so the dashboard stays clean on mobile and desktop.
+@app.after_request
+def compact_admin_sections(response):
+    if request_path_is_admin() and response.content_type and 'text/html' in response.content_type:
+        page = response.get_data(as_text=True)
+        style = """
+<style>
+.compact-admin-section{padding:0!important;overflow:hidden}
+.compact-admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;cursor:pointer}
+.compact-admin-head>.head{flex:1;margin:0}
+.compact-admin-head>h2{margin:0;flex:1}
+.compact-admin-toggle{flex:0 0 auto;background:#f0cf82!important;color:#15120e!important;border:1px solid #8b6b2d!important;padding:8px 13px!important;font-size:.82rem}
+.compact-admin-body{padding:0 20px 20px}
+.compact-admin-section.is-collapsed .compact-admin-body{display:none}
+.compact-admin-section.is-collapsed .compact-admin-head{padding-bottom:18px}
+@media(max-width:700px){.compact-admin-head{padding:15px 14px}.compact-admin-body{padding:0 14px 15px}.compact-admin-toggle{padding:7px 11px!important}}
+</style>
+"""
+        script = """
+<script>
+(function(){
+  var ids=['enquiries','experiences','products','branding','contact-reviews','security'];
+  ids.forEach(function(id){
+    var sec=document.getElementById(id);
+    if(!sec || sec.classList.contains('compact-admin-section')) return;
+    var directHead=sec.querySelector(':scope > .head');
+    var directTitle=sec.querySelector(':scope > h2');
+    var headNode=directHead || directTitle;
+    if(!headNode) return;
+    var nodes=Array.prototype.slice.call(sec.childNodes);
+    var head=document.createElement('div');
+    head.className='compact-admin-head';
+    head.appendChild(headNode);
+    var toggle=document.createElement('button');
+    toggle.type='button';
+    toggle.className='compact-admin-toggle';
+    toggle.textContent='Open';
+    toggle.setAttribute('aria-expanded','false');
+    head.appendChild(toggle);
+    var body=document.createElement('div');
+    body.className='compact-admin-body';
+    nodes.forEach(function(node){if(node!==headNode) body.appendChild(node);});
+    sec.appendChild(head);
+    sec.appendChild(body);
+    sec.classList.add('compact-admin-section','is-collapsed');
+    function setOpen(open){
+      sec.classList.toggle('is-collapsed',!open);
+      toggle.textContent=open?'Close':'Open';
+      toggle.setAttribute('aria-expanded',open?'true':'false');
+    }
+    head.addEventListener('click',function(e){
+      if(e.target.closest('a,button,input,select,textarea,label')) return;
+      setOpen(sec.classList.contains('is-collapsed'));
+    });
+    toggle.addEventListener('click',function(e){e.stopPropagation();setOpen(sec.classList.contains('is-collapsed'));});
+  });
+})();
+</script>
+"""
+        if '</head>' in page:
+            page = page.replace('</head>', style + '</head>', 1)
+        if '</body>' in page:
+            page = page.replace('</body>', script + '</body>', 1)
+        response.set_data(page)
+        response.headers['Content-Length'] = str(len(response.get_data()))
+    return response
+
+
+def request_path_is_admin():
+    from flask import request
+    return request.path == '/admin'
