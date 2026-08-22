@@ -13,32 +13,21 @@ def public_footer_html():
 
     contact_bits = ["<p>Nairobi, Kenya</p>"]
     if wa:
-        contact_bits.append(
-            f"<a href='{html.escape(wa)}' target='_blank' rel='noopener'>WhatsApp Big Mug</a>"
-        )
+        contact_bits.append(f"<a href='{html.escape(wa)}' target='_blank' rel='noopener'>WhatsApp Big Mug</a>")
     if email:
-        contact_bits.append(
-            f"<a href='mailto:{html.escape(email)}'>{html.escape(email)}</a>"
-        )
+        contact_bits.append(f"<a href='mailto:{html.escape(email)}'>{html.escape(email)}</a>")
     if len(contact_bits) == 1:
         contact_bits.append("<p>Bookings and product enquiries available.</p>")
 
     social_bits = []
     if instagram:
-        social_bits.append(
-            f"<a href='{html.escape(instagram)}' target='_blank' rel='noopener'>Instagram</a>"
-        )
+        social_bits.append(f"<a href='{html.escape(instagram)}' target='_blank' rel='noopener'>Instagram</a>")
     if facebook:
-        social_bits.append(
-            f"<a href='{html.escape(facebook)}' target='_blank' rel='noopener'>Facebook</a>"
-        )
+        social_bits.append(f"<a href='{html.escape(facebook)}' target='_blank' rel='noopener'>Facebook</a>")
     if not social_bits:
         social_bits.append("<p>Social links coming soon.</p>")
 
-    return (
-        "<div><b>Contact</b>" + ''.join(contact_bits) + "</div>"
-        "<div><b>Follow Us</b>" + ''.join(social_bits) + "</div>"
-    )
+    return ("<div><b>Contact</b>" + ''.join(contact_bits) + "</div>" "<div><b>Follow Us</b>" + ''.join(social_bits) + "</div>")
 
 
 def enhance_public_home(page):
@@ -47,21 +36,11 @@ def enhance_public_home(page):
         marker = '<section class="enquiry" id="enquire">'
         if marker in page:
             page = page.replace(marker, public + marker, 1)
-
     if 'href="#contact-trust">Contact</a>' not in page:
-        page = page.replace(
-            '<a href="#enquire">Enquire</a><a class="cta"',
-            '<a href="#contact-trust">Contact</a><a href="#enquire">Enquire</a><a class="cta"',
-            1,
-        )
-
-    old_footer = (
-        '<div><b>Contact</b><p>Nairobi, Kenya</p><p>Bookings and product enquiries available.</p></div>'
-        '<div><b>Follow Us</b><p>Instagram</p><p>Facebook</p></div>'
-    )
+        page = page.replace('<a href="#enquire">Enquire</a><a class="cta"','<a href="#contact-trust">Contact</a><a href="#enquire">Enquire</a><a class="cta"',1)
+    old_footer = ('<div><b>Contact</b><p>Nairobi, Kenya</p><p>Bookings and product enquiries available.</p></div>' '<div><b>Follow Us</b><p>Instagram</p><p>Facebook</p></div>')
     if old_footer in page:
         page = page.replace(old_footer, public_footer_html(), 1)
-
     return page
 
 
@@ -102,10 +81,14 @@ def compact_admin_sections(response):
 #products .compact-admin-body>form label,
 #branding .compact-admin-body>form label,
 #security .compact-admin-body>form label{color:#fff!important}
-/* Contact forms sit on light inner cards, so use dark text for maximum contrast. */
 #contact-reviews .compact-admin-body form h3,
 #contact-reviews .compact-admin-body form label,
 #contact-reviews .compact-admin-body form .muted{color:#3b2a1f!important}
+/* Keep every return-to-dashboard link readable on the black admin cards. */
+.compact-admin-body>a[href="#top"],
+.compact-admin-body>a[href="#dashboard"],
+.compact-admin-body>a[href="/admin"],
+#contact-reviews .compact-admin-body>a{color:#f0cf82!important;text-decoration:none!important;font-weight:600}
 @media(max-width:700px){
   .compact-admin-head{padding:11px 14px;min-height:58px}
   .compact-admin-section.is-collapsed .compact-admin-head{padding-top:11px;padding-bottom:11px}
