@@ -81,6 +81,9 @@ def compact_admin_sections(response):
 #products .compact-admin-body>form label,
 #branding .compact-admin-body>form label,
 #security .compact-admin-body>form label{color:#fff!important}
+#security .compact-admin-body .muted,
+#security .compact-admin-body form .muted,
+#security .compact-admin-body p{color:#3b2a1f!important}
 #contact-reviews .compact-admin-body form h3,
 #contact-reviews .compact-admin-body form label,
 #contact-reviews .compact-admin-body form .muted{color:#3b2a1f!important}
