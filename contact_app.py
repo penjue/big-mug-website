@@ -21,37 +21,9 @@ def public_footer_html():
     return ("<div><b>Contact</b>" + ''.join(contact_bits) + "</div>" "<div><b>Follow Us</b>" + ''.join(social_bits) + "</div>")
 
 
-def dedupe_contact_trust(page):
-    """Keep only the first public Contact Big Mug section if wrappers inject it twice."""
-    def next_start(text, start=0):
-        found = [p for p in (text.find("<section id='contact-trust'", start), text.find('<section id="contact-trust"', start)) if p != -1]
-        return min(found) if found else -1
-
-    first = next_start(page)
-    if first == -1:
-        return page
-    search_from = first + 1
-    while True:
-        duplicate = next_start(page, search_from)
-        if duplicate == -1:
-            break
-        end = page.find('</section>', duplicate)
-        if end == -1:
-            break
-        page = page[:duplicate] + page[end + len('</section>'):]
-        search_from = first + 1
-    return page
-
-
 def enhance_public_home(page):
-    if "id='contact-trust'" not in page and 'id="contact-trust"' not in page:
-        public = timeline.public_trust_html()
-        marker = '<section class="enquiry" id="enquire">'
-        if marker in page: page = page.replace(marker, public + marker, 1)
-
-    # Defensive clean-up: only one customer contact panel should ever render.
-    page = dedupe_contact_trust(page)
-
+    # timeline_app is the single source that injects the public Contact Big Mug
+    # section. Do not inject it here as well, otherwise it renders twice.
     if 'href="#contact-trust">Contact</a>' not in page:
         page = page.replace('<a href="#enquire">Enquire</a><a class="cta"','<a href="#contact-trust">Contact</a><a href="#enquire">Enquire</a><a class="cta"',1)
     old_footer = ('<div><b>Contact</b><p>Nairobi, Kenya</p><p>Bookings and product enquiries available.</p></div>' '<div><b>Follow Us</b><p>Instagram</p><p>Facebook</p></div>')
