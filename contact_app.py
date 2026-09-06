@@ -56,6 +56,7 @@ def enhance_public_home(page):
 #enquire .heading small,#enquire .heading h2{color:#f0cf82!important}
 #enquire .heading p,#enquire .enquiry-grid>div p{color:#f5ead2!important}
 #enquire form{color:#2b211c}
+#enquire .flash{background:#f2dfbd;color:#2b211c;border:1px solid #d3a04f;font-weight:700}
 #contact-trust{border-top:1px solid #ead7b5;padding:58px 0!important}
 footer{background:#0f0d0a!important}
 @media(max-width:980px){#booking-guide .steps{grid-template-columns:1fr!important}}
@@ -75,17 +76,33 @@ footer{background:#0f0d0a!important}
     if 'id="bigmug-public-theme"' not in page and '</head>' in page:
         page = page.replace('</head>', public_style + '</head>', 1)
 
-    # Step 4 ("Enjoy the experience") is not part of the after-booking process.
+    # Public refinements. Enquiry messages are moved to the enquiry section only
+    # when the browser has returned to #enquire; booking messages remain in #book.
     public_script = """
 <script id="bigmug-public-refinements">
 (function(){
   var guide=document.getElementById('booking-guide');
-  if(!guide) return;
-  var steps=guide.querySelectorAll('.step');
-  Array.prototype.forEach.call(steps,function(step){
-    var title=step.querySelector('h3');
-    if(title && title.textContent.trim().toLowerCase()==='enjoy the experience') step.remove();
-  });
+  if(guide){
+    var steps=guide.querySelectorAll('.step');
+    Array.prototype.forEach.call(steps,function(step){
+      var title=step.querySelector('h3');
+      if(title && title.textContent.trim().toLowerCase()==='enjoy the experience') step.remove();
+    });
+  }
+
+  if(window.location.hash==='#enquire'){
+    var book=document.getElementById('book');
+    var enquire=document.getElementById('enquire');
+    if(book && enquire){
+      var flashes=book.querySelectorAll('.flash');
+      var container=enquire.querySelector('.container');
+      if(container && flashes.length){
+        Array.prototype.forEach.call(flashes,function(flash){
+          container.insertBefore(flash,container.firstChild);
+        });
+      }
+    }
+  }
 })();
 </script>
 """
