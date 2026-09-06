@@ -23,9 +23,7 @@ def public_footer_html():
 
 def enhance_public_home(page):
     # timeline_app is the single source that injects the public Contact Big Mug
-    # section. Do not inject it here as well, otherwise it renders twice.
-    if 'href="#contact-trust">Contact</a>' not in page:
-        page = page.replace('<a href="#enquire">Enquire</a><a class="cta"','<a href="#contact-trust">Contact</a><a href="#enquire">Enquire</a><a class="cta"',1)
+    # section and navigation link.
     old_footer = ('<div><b>Contact</b><p>Nairobi, Kenya</p><p>Bookings and product enquiries available.</p></div>' '<div><b>Follow Us</b><p>Instagram</p><p>Facebook</p></div>')
     if old_footer in page: page = page.replace(old_footer, public_footer_html(), 1)
 
