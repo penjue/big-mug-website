@@ -4,53 +4,6 @@ import timeline_app as timeline
 app = timeline.app
 
 
-def diagnostic_send_booking_email(to_email, subject, message):
-    base = timeline.base
-    host = base.os.environ.get("BIG_MUG_SMTP_HOST")
-    raw_port = base.os.environ.get("BIG_MUG_SMTP_PORT", "587")
-    user = base.os.environ.get("BIG_MUG_SMTP_USER")
-    password = base.os.environ.get("BIG_MUG_SMTP_PASSWORD")
-    sender = base.os.environ.get("BIG_MUG_FROM_EMAIL", user)
-    missing = [name for name, value in (
-        ("BIG_MUG_SMTP_HOST", host),
-        ("BIG_MUG_SMTP_USER", user),
-        ("BIG_MUG_SMTP_PASSWORD", password),
-        ("BIG_MUG_FROM_EMAIL", sender),
-        ("recipient", to_email),
-    ) if not value]
-    if missing:
-        print("SMTP diagnostic: missing required setting(s): " + ", ".join(missing), flush=True)
-        return False
-    try:
-        port = int(raw_port)
-    except (TypeError, ValueError):
-        print("SMTP diagnostic: invalid BIG_MUG_SMTP_PORT", flush=True)
-        return False
-    print(f"SMTP diagnostic: configuration loaded host={host} port={port} user_set=yes sender_set=yes password_set=yes", flush=True)
-    try:
-        email = base.EmailMessage()
-        email["Subject"] = subject
-        email["From"] = sender
-        email["To"] = to_email
-        email.set_content(message)
-        print("SMTP diagnostic: opening connection", flush=True)
-        with base.smtplib.SMTP(host, port, timeout=15) as server:
-            print("SMTP diagnostic: connection opened; starting TLS", flush=True)
-            server.starttls()
-            print("SMTP diagnostic: TLS established; authenticating", flush=True)
-            server.login(user, password)
-            print("SMTP diagnostic: authentication succeeded; sending message", flush=True)
-            server.send_message(email)
-        print("SMTP diagnostic: message accepted by SMTP server", flush=True)
-        return True
-    except Exception as exc:
-        print(f"SMTP diagnostic: failed at SMTP stage: {type(exc).__name__}: {exc}", flush=True)
-        return False
-
-
-timeline.base.send_booking_email = diagnostic_send_booking_email
-
-
 def public_footer_html():
     email = timeline.setting('public_contact_email')
     whatsapp = timeline.setting('whatsapp_number')
