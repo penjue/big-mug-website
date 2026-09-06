@@ -78,6 +78,17 @@ def whatsapp_href(value):
     return f'https://wa.me/{digits}' if len(digits)>=8 else ''
 
 
+def business_address_lines():
+    fields=(
+        setting('business_building'),
+        setting('business_street'),
+        setting('business_city'),
+        setting('business_postcode_po_box'),
+        setting('business_country'),
+    )
+    return [value.strip() for value in fields if value and value.strip()]
+
+
 ensure_timeline_schema()
 
 
@@ -155,7 +166,12 @@ def contact_settings():
         'whatsapp_number':request.form.get('whatsapp_number','').strip()[:40],
         'instagram_url':request.form.get('instagram_url','').strip()[:400],
         'facebook_url':request.form.get('facebook_url','').strip()[:400],
-        'tiktok_url':request.form.get('tiktok_url','').strip()[:400]
+        'tiktok_url':request.form.get('tiktok_url','').strip()[:400],
+        'business_building':request.form.get('business_building','').strip()[:180],
+        'business_street':request.form.get('business_street','').strip()[:180],
+        'business_city':request.form.get('business_city','').strip()[:120],
+        'business_postcode_po_box':request.form.get('business_postcode_po_box','').strip()[:120],
+        'business_country':request.form.get('business_country','').strip()[:120]
     }
     if values['public_contact_email'] and '@' not in values['public_contact_email']:
         flash('Please enter a valid public contact email.','error'); return redirect(url_for('admin')+'#contact-reviews')
@@ -163,7 +179,7 @@ def contact_settings():
         if values[key] and not safe_url(values[key]):
             flash('Social links must be full http:// or https:// URLs.','error'); return redirect(url_for('admin')+'#contact-reviews')
     for key,value in values.items(): base.set_setting(key,value)
-    flash('Contact and social links updated.','success'); return redirect(url_for('admin')+'#contact-reviews')
+    flash('Contact, address and social details updated.','success'); return redirect(url_for('admin')+'#contact-reviews')
 
 
 @app.post('/admin/testimonial/add')
@@ -204,6 +220,8 @@ def testimonial_delete(item_id):
 
 def public_trust_html():
     email=setting('public_contact_email'); whatsapp=setting('whatsapp_number'); instagram=safe_url(setting('instagram_url')); facebook=safe_url(setting('facebook_url')); tiktok=safe_url(setting('tiktok_url')); wa=whatsapp_href(whatsapp)
+    address_lines=business_address_lines()
+    address_block=("<div style='text-align:center;color:#6d625c;margin:0 auto 22px'>"+''.join(f"<div>{html.escape(line)}</div>" for line in address_lines)+"</div>") if address_lines else ''
     conn=base.db(); reviews=conn.execute('SELECT * FROM testimonials WHERE active=1 ORDER BY id DESC LIMIT 6').fetchall(); conn.close()
     review_cards=''.join(
         f"<article style='background:#fff;padding:24px;border-radius:20px;box-shadow:0 12px 28px rgba(35,22,14,.08)'><div style='color:#d3a04f;font-size:1.15rem;letter-spacing:2px'>★★★★★</div><p style='font-size:1.02rem'>“{html.escape(r['review_text'])}”</p><strong style='color:#3b2418'>{html.escape(r['customer_name'])}</strong>{('<div style=\"color:#6d625c;font-size:.9rem\">'+html.escape(r['customer_location'])+'</div>') if r['customer_location'] else ''}</article>"
@@ -216,14 +234,15 @@ def public_trust_html():
     if facebook: actions.append(f"<a href='{html.escape(facebook)}' target='_blank' rel='noopener' style='color:#3b2418;font-weight:800'>Facebook</a>")
     if tiktok: actions.append(f"<a href='{html.escape(tiktok)}' target='_blank' rel='noopener' style='color:#3b2418;font-weight:800'>TikTok</a>")
     if not actions: actions.append("<a href='#enquire' style='display:inline-block;background:#d3a04f;color:#1d120d;padding:13px 20px;border-radius:999px;text-decoration:none;font-weight:900'>Ask Big Mug</a>")
-    return f"""<section id='contact-trust' style='padding:78px 0;background:#fffaf5'><div class='container'><div style='text-align:center;max-width:760px;margin:0 auto 30px'><small style='color:#b77d27;font-weight:900;letter-spacing:1.4px'>WE'RE HERE TO HELP</small><h2 style='color:#3b2418;font-size:clamp(2.2rem,5vw,3.4rem);margin:6px 0;text-transform:uppercase'>Contact Big Mug</h2><p style='color:#6d625c'>Questions before you book, group planning, marketplace products or a confirmed-booking update? Reach Big Mug through the contact options below.</p></div><div style='display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap'>{''.join(actions)}</div>{reviews_block}</div></section>"""
+    return f"""<section id='contact-trust' style='padding:78px 0;background:#fffaf5'><div class='container'><div style='text-align:center;max-width:760px;margin:0 auto 30px'><small style='color:#b77d27;font-weight:900;letter-spacing:1.4px'>WE'RE HERE TO HELP</small><h2 style='color:#3b2418;font-size:clamp(2.2rem,5vw,3.4rem);margin:6px 0;text-transform:uppercase'>Contact Big Mug</h2><p style='color:#6d625c'>Questions before you book, group planning, marketplace products or a confirmed-booking update? Reach Big Mug through the contact options below.</p></div>{address_block}<div style='display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap'>{''.join(actions)}</div>{reviews_block}</div></section>"""
 
 
 def admin_contact_reviews_html():
     csrf=html.escape(base.csrf_token()); email=html.escape(setting('public_contact_email')); whatsapp=html.escape(setting('whatsapp_number')); instagram=html.escape(setting('instagram_url')); facebook=html.escape(setting('facebook_url')); tiktok=html.escape(setting('tiktok_url'))
+    building=html.escape(setting('business_building')); street=html.escape(setting('business_street')); city=html.escape(setting('business_city')); postcode_po_box=html.escape(setting('business_postcode_po_box')); country=html.escape(setting('business_country'))
     conn=base.db(); reviews=conn.execute('SELECT * FROM testimonials ORDER BY id DESC').fetchall(); conn.close()
     review_forms=''.join(f"""<div class='card'><h3>{html.escape(r['customer_name'])}</h3><form method='POST' action='/admin/testimonial/{r['id']}/edit'><input type='hidden' name='_csrf_token' value='{csrf}'><label>Customer name</label><input name='customer_name' value='{html.escape(r['customer_name'])}' required><label>Location</label><input name='customer_location' value='{html.escape(r['customer_location'] or '')}'><label>Review</label><textarea name='review_text' required>{html.escape(r['review_text'])}</textarea><label>Visibility</label><select name='active'><option value='1' {'selected' if r['active'] else ''}>Visible</option><option value='0' {'selected' if not r['active'] else ''}>Hidden</option></select><button>Save Testimonial</button></form><form method='POST' action='/admin/testimonial/{r['id']}/delete'><input type='hidden' name='_csrf_token' value='{csrf}'><button class='danger' type='submit'>Delete Testimonial</button></form></div>""" for r in reviews)
-    return f"""<section class='sec' id='contact-reviews'><div class='head'><div><h2>Contact, Social & Reviews</h2><p class='muted'>Control the public contact buttons and guest testimonials without editing code.</p></div></div><div class='cards'><div class='card'><h3>Public Contact Details</h3><form method='POST' action='/admin/contact-settings'><input type='hidden' name='_csrf_token' value='{csrf}'><label>Public contact email</label><input type='email' name='contact_email' value='{email}' placeholder='hello@example.com'><label>WhatsApp number</label><input name='whatsapp_number' value='{whatsapp}' placeholder='+2547...'><div class='muted'>Include the country code. The website creates the WhatsApp link automatically.</div><label>Instagram URL</label><input name='instagram_url' value='{instagram}' placeholder='https://instagram.com/...'><label>Facebook URL</label><input name='facebook_url' value='{facebook}' placeholder='https://facebook.com/...'><label>TikTok URL</label><input name='tiktok_url' value='{tiktok}' placeholder='https://www.tiktok.com/@...'><button>Save Contact Details</button></form></div><div class='card'><h3>Add Guest Testimonial</h3><form method='POST' action='/admin/testimonial/add'><input type='hidden' name='_csrf_token' value='{csrf}'><label>Customer name</label><input name='customer_name' required><label>Location</label><input name='customer_location' placeholder='e.g. London, UK'><label>Review</label><textarea name='review_text' required placeholder='Use only genuine customer feedback you have permission to publish.'></textarea><button>Add Testimonial</button></form></div></div>{("<h3 style='margin-top:28px'>Manage Testimonials</h3><div class='cards'>"+review_forms+"</div>") if reviews else ''}<a class='back' href='#top'>↑ Dashboard</a></section>"""
+    return f"""<section class='sec' id='contact-reviews'><div class='head'><div><h2>Contact, Social & Reviews</h2><p class='muted'>Control the public address, contact buttons, social links and guest testimonials without editing code.</p></div></div><div class='cards'><div class='card'><h3>Public Contact Details</h3><form method='POST' action='/admin/contact-settings'><input type='hidden' name='_csrf_token' value='{csrf}'><label>Public contact email</label><input type='email' name='contact_email' value='{email}' placeholder='hello@example.com'><label>WhatsApp number</label><input name='whatsapp_number' value='{whatsapp}' placeholder='+2547...'><div class='muted'>Include the country code. The website creates the WhatsApp link automatically.</div><h3 style='margin-top:24px'>Business Address</h3><label>Building / house / apartment</label><input name='business_building' value='{building}' placeholder='e.g. Big Mug House, Suite 4'><label>Road / street</label><input name='business_street' value='{street}' placeholder='e.g. Ngong Road'><label>Town / city</label><input name='business_city' value='{city}' placeholder='e.g. Nairobi'><label>Postcode / P.O. Box</label><input name='business_postcode_po_box' value='{postcode_po_box}' placeholder='e.g. 00100 or P.O. Box 12345-00100'><label>Country</label><input name='business_country' value='{country}' placeholder='e.g. Kenya'><h3 style='margin-top:24px'>Social Links</h3><label>Instagram URL</label><input name='instagram_url' value='{instagram}' placeholder='https://instagram.com/...'><label>Facebook URL</label><input name='facebook_url' value='{facebook}' placeholder='https://facebook.com/...'><label>TikTok URL</label><input name='tiktok_url' value='{tiktok}' placeholder='https://www.tiktok.com/@...'><button>Save Contact Details</button></form></div><div class='card'><h3>Add Guest Testimonial</h3><form method='POST' action='/admin/testimonial/add'><input type='hidden' name='_csrf_token' value='{csrf}'><label>Customer name</label><input name='customer_name' required><label>Location</label><input name='customer_location' placeholder='e.g. London, UK'><label>Review</label><textarea name='review_text' required placeholder='Use only genuine customer feedback you have permission to publish.'></textarea><button>Add Testimonial</button></form></div></div>{("<h3 style='margin-top:28px'>Manage Testimonials</h3><div class='cards'>"+review_forms+"</div>") if reviews else ''}<a class='back' href='#top'>↑ Dashboard</a></section>"""
 
 
 @app.after_request
@@ -232,7 +251,25 @@ def enhance_pages(response):
         try:
             page=response.get_data(as_text=True)
             if request.path=='/admin':
-                history_script="""<script>(function(){document.querySelectorAll('form[action^=\"/admin/booking/\"][action$=\"/status\"]').forEach(function(f){var m=f.action.match(/\/admin\/booking\/(\d+)\/status$/);if(!m)return;var link=document.createElement('a');link.href='/admin/booking/'+m[1]+'/history';link.textContent='View History';link.style.cssText='display:inline-block;margin-top:8px;padding:8px 12px;border-radius:999px;background:#eee5dd;color:#3b2418;text-decoration:none;font-weight:800;font-size:.82rem';f.parentElement.appendChild(link);});})();</script>"""
+                history_script="""<script>(function(){
+var storageKey='bigmug-admin-panel';
+document.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',function(){var sec=f.closest('.sec');if(sec&&sec.id){try{sessionStorage.setItem(storageKey,sec.id)}catch(e){}}});});
+function restorePanel(){
+  var id=(window.location.hash||'').replace('#','');
+  if(!id){try{id=sessionStorage.getItem(storageKey)||''}catch(e){}}
+  if(!id)return;
+  var sec=document.getElementById(id); if(!sec)return;
+  if(sec.classList.contains('is-collapsed')){
+    sec.classList.remove('is-collapsed');
+    var toggle=sec.querySelector('.compact-admin-toggle');
+    if(toggle){toggle.textContent='Close';toggle.setAttribute('aria-expanded','true');}
+  }
+  try{sessionStorage.setItem(storageKey,id)}catch(e){}
+}
+document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(){var id=(a.getAttribute('href')||'').replace('#','');if(id){try{sessionStorage.setItem(storageKey,id)}catch(e){}}});});
+document.querySelectorAll('form[action^="/admin/booking/"][action$="/status"]').forEach(function(f){var m=f.action.match(/\/admin\/booking\/(\d+)\/status$/);if(!m)return;var link=document.createElement('a');link.href='/admin/booking/'+m[1]+'/history';link.textContent='View History';link.style.cssText='display:inline-block;margin-top:8px;padding:8px 12px;border-radius:999px;background:#eee5dd;color:#3b2418;text-decoration:none;font-weight:800;font-size:.82rem';f.parentElement.appendChild(link);});
+setTimeout(restorePanel,0);window.addEventListener('hashchange',restorePanel);
+})();</script>"""
                 section=admin_contact_reviews_html()
                 security_marker='<section class="sec" id="security">'
                 if security_marker in page:
@@ -246,6 +283,10 @@ def enhance_pages(response):
                 public=public_trust_html()
                 page=page.replace('<section class="enquiry" id="enquire">',public+'<section class="enquiry" id="enquire">',1)
                 page=page.replace('<a href="#enquire">Enquire</a><a class="cta"','<a href="#contact-trust">Contact</a><a href="#enquire">Enquire</a><a class="cta"',1)
+                address_lines=business_address_lines()
+                if address_lines:
+                    address_html=''.join(f'<p>{html.escape(line)}</p>' for line in address_lines)
+                    page=page.replace('<p>Nairobi, Kenya</p>',address_html,1)
             response.set_data(page); response.headers['Content-Length']=str(len(response.get_data()))
         except Exception as exc:
             print('Page enhancement failed:',exc)
