@@ -6,6 +6,8 @@ import timeline_app as timeline
 import contact_icons
 # Registers product purchasing, delivery and payment controls.
 import commerce_admin
+# Enforces the secure payment transaction lifecycle before real providers are connected.
+import payments_phase1
 
 app = timeline.app
 base = timeline.base
