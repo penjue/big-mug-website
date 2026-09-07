@@ -166,10 +166,45 @@ def compact_admin_sections(response):
 .compact-admin-body{padding:0 20px 20px}
 .compact-admin-section.is-collapsed .compact-admin-body{display:none}
 .compact-admin-section.is-collapsed .compact-admin-head{padding-top:13px;padding-bottom:13px}
-#contact-reviews.compact-admin-section{background:#0f0d0a!important;color:#f5ead2!important;border:1px solid #5f481d!important}
-#contact-reviews h2{color:#f0cf82!important}
-#contact-reviews .muted{color:#d5c7ad!important}
+#contact-reviews.compact-admin-section,
+#booking-guide-settings.compact-admin-section,
+#story-settings.compact-admin-section,
+#seo-settings.compact-admin-section,
+#policy-settings.compact-admin-section,
+#faq-settings.compact-admin-section,
+#about-settings.compact-admin-section,
+#hero-settings.compact-admin-section{background:#0f0d0a!important;color:#f5ead2!important;border:1px solid #5f481d!important}
+#contact-reviews h2,
+#booking-guide-settings h2,
+#story-settings h2,
+#seo-settings h2,
+#policy-settings h2,
+#faq-settings h2,
+#about-settings h2,
+#hero-settings h2{color:#f0cf82!important}
+#contact-reviews .compact-admin-head .muted,
+#booking-guide-settings .compact-admin-head .muted,
+#story-settings .compact-admin-head .muted,
+#seo-settings .compact-admin-head .muted,
+#policy-settings .compact-admin-head .muted,
+#faq-settings .compact-admin-head .muted,
+#about-settings .compact-admin-head .muted,
+#hero-settings .compact-admin-head .muted{color:#d5c7ad!important}
+#booking-guide-settings .compact-admin-body .card,
+#story-settings .compact-admin-body .card,
+#seo-settings .compact-admin-body .card,
+#policy-settings .compact-admin-body .card,
+#faq-settings .compact-admin-body .card,
+#about-settings .compact-admin-body .card,
+#hero-settings .compact-admin-body .card{background:#fffaf5!important;color:#3b2a1f!important;border:1px solid #d8bd84!important}
 #experiences .compact-admin-body>form label,#products .compact-admin-body>form label,#branding .compact-admin-body>form label,#hero-settings .compact-admin-body>form label,#about-settings .compact-admin-body>form label,#faq-settings .compact-admin-body>form label,#policy-settings .compact-admin-body>form label,#seo-settings .compact-admin-body>form label,#story-settings .compact-admin-body>form label,#booking-guide-settings .compact-admin-body>form label,#security .compact-admin-body>form label{color:#fff!important}
+#booking-guide-settings .compact-admin-body form label,#booking-guide-settings .compact-admin-body form .muted,
+#story-settings .compact-admin-body form label,#story-settings .compact-admin-body form .muted,
+#seo-settings .compact-admin-body form label,#seo-settings .compact-admin-body form .muted,
+#policy-settings .compact-admin-body form label,#policy-settings .compact-admin-body form .muted,
+#faq-settings .compact-admin-body form label,#faq-settings .compact-admin-body form .muted,
+#about-settings .compact-admin-body form label,#about-settings .compact-admin-body form .muted,
+#hero-settings .compact-admin-body form label,#hero-settings .compact-admin-body form .muted{color:#3b2a1f!important}
 #security .compact-admin-body .muted,#security .compact-admin-body form .muted,#security .compact-admin-body p{color:#3b2a1f!important}
 #contact-reviews .compact-admin-body form h3,#contact-reviews .compact-admin-body form label,#contact-reviews .compact-admin-body form .muted{color:#3b2a1f!important}
 .compact-admin-body>a[href="#top"],.compact-admin-body>a[href="#dashboard"],.compact-admin-body>a[href="/admin"],#contact-reviews .compact-admin-body>a{color:#f0cf82!important;text-decoration:none!important;font-weight:600}
