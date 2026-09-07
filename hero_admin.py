@@ -2,6 +2,9 @@ import html
 from flask import request, redirect, url_for, flash
 import timeline_app as timeline
 
+# Registers editable Welcome / About controls and public rendering.
+import about_admin
+
 app = timeline.app
 base = timeline.base
 
@@ -76,8 +79,7 @@ def admin_hero_html():
       <label>Button text</label><input name='hero_button_text' value='{button}' required>
       <label>Hero background image</label><input type='file' name='hero_image' accept='.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'>
       {image_note}{remove}
-      <button type='submit'>Save Hero Section</button>
-      <a href='/' target='_blank' rel='noopener' style='display:inline-block;margin-left:10px;margin-top:12px;padding:10px 16px;border-radius:999px;background:#f0cf82;color:#15120e;text-decoration:none;font-weight:800'>View Website ↗</a>
+      <div style='display:flex;gap:10px;flex-wrap:wrap;margin-top:14px'><button type='submit'>Save Hero Section</button><a href='/' target='_blank' rel='noopener' style='display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:999px;background:#fff3df;color:#3b2418;text-decoration:none;font-weight:800;border:1px solid #e1c28e'>View Website ↗</a></div>
     </form>
   </div></div>
   <a class='back' href='#top'>↑ Dashboard</a>
