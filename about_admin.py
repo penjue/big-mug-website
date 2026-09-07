@@ -64,14 +64,17 @@ def about_settings():
 
 def admin_about_html():
     csrf = html.escape(base.csrf_token())
-    def v(k): return html.escape(value(k))
+    def v(k):
+        return html.escape(value(k))
+
     current_image = timeline.setting('about_image_filename')
     image_note = "<p class='muted'>A custom About image is currently active.</p>" if current_image else "<p class='muted'>The original Big Mug welcome image is currently active.</p>"
     remove = "<label style='display:flex;gap:8px;align-items:center;margin-top:10px'><input type='checkbox' name='remove_about_image' value='1' style='width:auto'> Restore original About image</label>" if current_image else ''
+
     return f"""
-<section class='sec compact-admin-section is-collapsed' id='about-settings'>
-  <div class='compact-admin-head'><div class='head'><div><h2>Welcome / About</h2><p class='muted'>Edit the introduction visitors see below the hero.</p></div></div><button type='button' class='compact-admin-toggle' aria-expanded='false'>Open</button></div>
-  <div class='compact-admin-body'><div class='cards'><div class='card'>
+<section class='sec' id='about-settings'>
+  <div class='head'><div><h2>Welcome / About</h2><p class='muted'>Edit the introduction visitors see below the hero.</p></div></div>
+  <div class='cards'><div class='card'>
     <form method='POST' action='/admin/about-settings' enctype='multipart/form-data'>
       <input type='hidden' name='_csrf_token' value='{csrf}'>
       <label>Small heading</label><input name='about_eyebrow' value='{v('about_eyebrow')}' required>
@@ -79,17 +82,21 @@ def admin_about_html():
       <label>Paragraph 1</label><textarea name='about_paragraph_1' required>{v('about_paragraph_1')}</textarea>
       <label>Paragraph 2</label><textarea name='about_paragraph_2' required>{v('about_paragraph_2')}</textarea>
       <label>Paragraph 3</label><textarea name='about_paragraph_3' required>{v('about_paragraph_3')}</textarea>
-      <label>Feature 1 title</label><input name='about_feature_1_title' value='{v('about_feature_1_title')}' required><label>Feature 1 text</label><input name='about_feature_1_text' value='{v('about_feature_1_text')}' required>
-      <label>Feature 2 title</label><input name='about_feature_2_title' value='{v('about_feature_2_title')}' required><label>Feature 2 text</label><input name='about_feature_2_text' value='{v('about_feature_2_text')}' required>
-      <label>Feature 3 title</label><input name='about_feature_3_title' value='{v('about_feature_3_title')}' required><label>Feature 3 text</label><input name='about_feature_3_text' value='{v('about_feature_3_text')}' required>
-      <label>Feature 4 title</label><input name='about_feature_4_title' value='{v('about_feature_4_title')}' required><label>Feature 4 text</label><input name='about_feature_4_text' value='{v('about_feature_4_text')}' required>
+      <label>Feature 1 title</label><input name='about_feature_1_title' value='{v('about_feature_1_title')}' required>
+      <label>Feature 1 text</label><input name='about_feature_1_text' value='{v('about_feature_1_text')}' required>
+      <label>Feature 2 title</label><input name='about_feature_2_title' value='{v('about_feature_2_title')}' required>
+      <label>Feature 2 text</label><input name='about_feature_2_text' value='{v('about_feature_2_text')}' required>
+      <label>Feature 3 title</label><input name='about_feature_3_title' value='{v('about_feature_3_title')}' required>
+      <label>Feature 3 text</label><input name='about_feature_3_text' value='{v('about_feature_3_text')}' required>
+      <label>Feature 4 title</label><input name='about_feature_4_title' value='{v('about_feature_4_title')}' required>
+      <label>Feature 4 text</label><input name='about_feature_4_text' value='{v('about_feature_4_text')}' required>
       <label>About image</label><input type='file' name='about_image' accept='.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'>
       {image_note}{remove}
       <div style='display:flex;gap:10px;flex-wrap:wrap;margin-top:14px'><button type='submit'>Save About Section</button><a href='/' target='_blank' rel='noopener' style='display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:999px;background:#fff3df;color:#3b2418;text-decoration:none;font-weight:800;border:1px solid #e1c28e'>View Website ↗</a></div>
     </form>
-  </div></div><a class='back' href='#top'>↑ Dashboard</a></div>
+  </div></div>
+  <a class='back' href='#top'>↑ Dashboard</a>
 </section>
-<script id='about-admin-toggle'>(function(){var sec=document.getElementById('about-settings');if(!sec)return;var head=sec.querySelector('.compact-admin-head'),toggle=sec.querySelector('.compact-admin-toggle');function setOpen(open){sec.classList.toggle('is-collapsed',!open);toggle.textContent=open?'Close':'Open';toggle.setAttribute('aria-expanded',open?'true':'false');}head.addEventListener('click',function(e){if(e.target.closest('a,button,input,select,textarea,label'))return;setOpen(sec.classList.contains('is-collapsed'));});toggle.addEventListener('click',function(e){e.stopPropagation();setOpen(sec.classList.contains('is-collapsed'));});if(window.location.hash==='#about-settings')setOpen(true);})();</script>
 """
 
 
@@ -101,7 +108,21 @@ def public_about(page):
         photo = f"<div class='intro-photo' style=\"background-image:url('/site-images/{safe_image}')\"></div>"
     else:
         photo = '<div class="intro-photo"></div>'
-    new = f'''<section class="intro" id="about"><div class="container"><div class="intro-grid"><div><small>{html.escape(value('about_eyebrow'))}</small><h2>{html.escape(value('about_title'))}</h2><p>{html.escape(value('about_paragraph_1'))}</p><p>{html.escape(value('about_paragraph_2'))}</p><p>{html.escape(value('about_paragraph_3'))}</p></div>{photo}</div><div class="features"><div class="feature"><b>{html.escape(value('about_feature_1_title'))}</b><br>{html.escape(value('about_feature_1_text'))}</div><div class="feature"><b>{html.escape(value('about_feature_2_title'))}</b><br>{html.escape(value('about_feature_2_text'))}</div><div class="feature"><b>{html.escape(value('about_feature_3_title'))}</b><br>{html.escape(value('about_feature_3_text'))}</div><div class="feature"><b>{html.escape(value('about_feature_4_title'))}</b><br>{html.escape(value('about_feature_4_text'))}</div></div></div></section>'''
+
+    new = (
+        '<section class="intro" id="about"><div class="container"><div class="intro-grid"><div>'
+        f'<small>{html.escape(value("about_eyebrow"))}</small>'
+        f'<h2>{html.escape(value("about_title"))}</h2>'
+        f'<p>{html.escape(value("about_paragraph_1"))}</p>'
+        f'<p>{html.escape(value("about_paragraph_2"))}</p>'
+        f'<p>{html.escape(value("about_paragraph_3"))}</p>'
+        f'</div>{photo}</div><div class="features">'
+        f'<div class="feature"><b>{html.escape(value("about_feature_1_title"))}</b><br>{html.escape(value("about_feature_1_text"))}</div>'
+        f'<div class="feature"><b>{html.escape(value("about_feature_2_title"))}</b><br>{html.escape(value("about_feature_2_text"))}</div>'
+        f'<div class="feature"><b>{html.escape(value("about_feature_3_title"))}</b><br>{html.escape(value("about_feature_3_text"))}</div>'
+        f'<div class="feature"><b>{html.escape(value("about_feature_4_title"))}</b><br>{html.escape(value("about_feature_4_text"))}</div>'
+        '</div></div></section>'
+    )
     if old in page:
         page = page.replace(old, new, 1)
     return page
