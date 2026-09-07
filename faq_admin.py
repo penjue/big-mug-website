@@ -2,6 +2,9 @@ import html
 from flask import request, redirect, url_for, flash
 import timeline_app as timeline
 
+# Registers editable booking / cancellation policy controls.
+import policy_admin
+
 app = timeline.app
 base = timeline.base
 
