@@ -4,6 +4,8 @@ import timeline_app as timeline
 
 # Adds icon styling to the public Contact Big Mug action buttons.
 import contact_icons
+# Registers product purchasing, delivery and payment controls.
+import commerce_admin
 
 app = timeline.app
 base = timeline.base
