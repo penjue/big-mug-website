@@ -2,6 +2,9 @@ import html
 from flask import request, redirect, url_for, flash
 import timeline_app as timeline
 
+# Adds icon styling to the public Contact Big Mug action buttons.
+import contact_icons
+
 app = timeline.app
 base = timeline.base
 
@@ -47,53 +50,29 @@ def admin_section_headings_html():
     def v(key):
         return html.escape(value(key))
     status = "<p class='muted'>Custom homepage section headings are active on the public website.</p>" if timeline.setting('section_headings_custom_active') == '1' else "<p class='muted'>The current public headings remain unchanged until you save this panel.</p>"
-    open_now = "true" if request.url.endswith('#section-headings-settings') else "false"
     return f"""
-<section class='sec compact-admin-section is-collapsed' id='section-headings-settings' style='background:#0f0d0a;color:#f5ead2;border:1px solid #5f481d;padding:0;overflow:hidden'>
-  <div class='compact-admin-head' style='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 20px;cursor:pointer;min-height:64px'>
-    <div class='head' style='flex:1;margin:0'><div><h2 style='color:#f0cf82'>Homepage Section Headings</h2><p class='muted' style='color:#d5c7ad'>Edit the Experiences, Compare and Marketplace headings without changing their products or cards.</p></div></div>
-    <button type='button' class='compact-admin-toggle' style='background:#f0cf82;color:#15120e;border:1px solid #8b6b2d;padding:7px 12px;font-size:.82rem'>Open</button>
-  </div>
-  <div class='compact-admin-body' style='display:none;padding:0 20px 20px'>
-    <div class='cards'><div class='card' style='background:#fffaf5;color:#3b2a1f;border:1px solid #d8bd84'>
-      <form method='POST' action='/admin/section-headings-settings'>
-        <input type='hidden' name='_csrf_token' value='{csrf}'>
-        {status}
-        <h3>Experiences</h3>
-        <label style='color:#3b2a1f'>Small heading</label><input name='experiences_eyebrow' value='{v('experiences_eyebrow')}' required>
-        <label style='color:#3b2a1f'>Main heading</label><input name='experiences_title' value='{v('experiences_title')}' required>
-        <label style='color:#3b2a1f'>Introduction</label><textarea name='experiences_intro' required>{v('experiences_intro')}</textarea>
-        <h3 style='margin-top:24px'>Compare Experiences</h3>
-        <label style='color:#3b2a1f'>Small heading</label><input name='compare_eyebrow' value='{v('compare_eyebrow')}' required>
-        <label style='color:#3b2a1f'>Main heading</label><input name='compare_title' value='{v('compare_title')}' required>
-        <h3 style='margin-top:24px'>Marketplace</h3>
-        <label style='color:#3b2a1f'>Small heading</label><input name='marketplace_eyebrow' value='{v('marketplace_eyebrow')}' required>
-        <label style='color:#3b2a1f'>Main heading</label><input name='marketplace_title' value='{v('marketplace_title')}' required>
-        <label style='color:#3b2a1f'>Introduction</label><textarea name='marketplace_intro' required>{v('marketplace_intro')}</textarea>
-        <div style='display:flex;gap:10px;flex-wrap:wrap;margin-top:14px'><button type='submit'>Save Section Headings</button><a href='/#experiences' target='_blank' rel='noopener' style='display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:999px;background:#fff3df;color:#3b2418;text-decoration:none;font-weight:800;border:1px solid #e1c28e'>View Website ↗</a></div>
-      </form>
-    </div></div>
-    <a class='back' href='#top' style='color:#f0cf82;text-decoration:none;font-weight:600'>↑ Dashboard</a>
-  </div>
+<section class='sec' id='section-headings-settings'>
+  <div class='head'><div><h2>Homepage Section Headings</h2><p class='muted'>Edit the Experiences, Compare and Marketplace headings without changing their products or cards.</p></div></div>
+  <div class='cards'><div class='card'>
+    <form method='POST' action='/admin/section-headings-settings'>
+      <input type='hidden' name='_csrf_token' value='{csrf}'>
+      {status}
+      <h3>Experiences</h3>
+      <label>Small heading</label><input name='experiences_eyebrow' value='{v('experiences_eyebrow')}' required>
+      <label>Main heading</label><input name='experiences_title' value='{v('experiences_title')}' required>
+      <label>Introduction</label><textarea name='experiences_intro' required>{v('experiences_intro')}</textarea>
+      <h3 style='margin-top:24px'>Compare Experiences</h3>
+      <label>Small heading</label><input name='compare_eyebrow' value='{v('compare_eyebrow')}' required>
+      <label>Main heading</label><input name='compare_title' value='{v('compare_title')}' required>
+      <h3 style='margin-top:24px'>Marketplace</h3>
+      <label>Small heading</label><input name='marketplace_eyebrow' value='{v('marketplace_eyebrow')}' required>
+      <label>Main heading</label><input name='marketplace_title' value='{v('marketplace_title')}' required>
+      <label>Introduction</label><textarea name='marketplace_intro' required>{v('marketplace_intro')}</textarea>
+      <div style='display:flex;gap:10px;flex-wrap:wrap;margin-top:14px'><button type='submit'>Save Section Headings</button><a href='/#experiences' target='_blank' rel='noopener' style='display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:999px;background:#fff3df;color:#3b2418;text-decoration:none;font-weight:800;border:1px solid #e1c28e'>View Website ↗</a></div>
+    </form>
+  </div></div>
+  <a class='back' href='#top'>↑ Dashboard</a>
 </section>
-<script>
-(function(){{
-  var sec=document.getElementById('section-headings-settings');
-  if(!sec) return;
-  var head=sec.querySelector('.compact-admin-head');
-  var body=sec.querySelector('.compact-admin-body');
-  var btn=sec.querySelector('.compact-admin-toggle');
-  function setOpen(open){{
-    sec.classList.toggle('is-collapsed',!open);
-    body.style.display=open?'block':'none';
-    btn.textContent=open?'Close':'Open';
-    btn.setAttribute('aria-expanded',open?'true':'false');
-  }}
-  head.addEventListener('click',function(e){{if(e.target.closest('a,button,input,select,textarea,label')) return;setOpen(sec.classList.contains('is-collapsed'));}});
-  btn.addEventListener('click',function(e){{e.stopPropagation();setOpen(sec.classList.contains('is-collapsed'));}});
-  if(window.location.hash==='#section-headings-settings') setOpen(true);
-}})();
-</script>
 """
 
 
