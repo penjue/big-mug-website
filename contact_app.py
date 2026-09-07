@@ -169,7 +169,7 @@ def compact_admin_sections(response):
 #contact-reviews.compact-admin-section{background:#0f0d0a!important;color:#f5ead2!important;border:1px solid #5f481d!important}
 #contact-reviews h2{color:#f0cf82!important}
 #contact-reviews .muted{color:#d5c7ad!important}
-#experiences .compact-admin-body>form label,#products .compact-admin-body>form label,#branding .compact-admin-body>form label,#hero-settings .compact-admin-body>form label,#about-settings .compact-admin-body>form label,#faq-settings .compact-admin-body>form label,#policy-settings .compact-admin-body>form label,#security .compact-admin-body>form label{color:#fff!important}
+#experiences .compact-admin-body>form label,#products .compact-admin-body>form label,#branding .compact-admin-body>form label,#hero-settings .compact-admin-body>form label,#about-settings .compact-admin-body>form label,#faq-settings .compact-admin-body>form label,#policy-settings .compact-admin-body>form label,#seo-settings .compact-admin-body>form label,#story-settings .compact-admin-body>form label,#security .compact-admin-body>form label{color:#fff!important}
 #security .compact-admin-body .muted,#security .compact-admin-body form .muted,#security .compact-admin-body p{color:#3b2a1f!important}
 #contact-reviews .compact-admin-body form h3,#contact-reviews .compact-admin-body form label,#contact-reviews .compact-admin-body form .muted{color:#3b2a1f!important}
 .compact-admin-body>a[href="#top"],.compact-admin-body>a[href="#dashboard"],.compact-admin-body>a[href="/admin"],#contact-reviews .compact-admin-body>a{color:#f0cf82!important;text-decoration:none!important;font-weight:600}
@@ -179,7 +179,7 @@ def compact_admin_sections(response):
         script = """
 <script>
 (function(){
-  var ids=['enquiries','experiences','products','policy-settings','faq-settings','about-settings','hero-settings','branding','contact-reviews','security'];
+  var ids=['enquiries','experiences','products','story-settings','seo-settings','policy-settings','faq-settings','about-settings','hero-settings','branding','contact-reviews','security'];
   ids.forEach(function(id){
     var sec=document.getElementById(id);
     if(!sec || sec.classList.contains('compact-admin-section')) return;
