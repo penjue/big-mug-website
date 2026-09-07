@@ -2,6 +2,9 @@ import html
 from flask import request, redirect, url_for, flash, Response
 import timeline_app as timeline
 
+# Registers editable Our Story controls and public rendering.
+import story_admin
+
 app = timeline.app
 base = timeline.base
 
