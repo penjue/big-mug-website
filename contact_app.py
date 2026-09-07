@@ -25,16 +25,11 @@ def public_footer_html():
 
 
 def enhance_public_home(page):
-    # timeline_app is the single source that injects the public Contact Big Mug
-    # section and navigation link.
     old_footer = ('<div><b>Contact</b><p>Nairobi, Kenya</p><p>Bookings and product enquiries available.</p></div>' '<div><b>Follow Us</b><p>Instagram</p><p>Facebook</p></div>')
     if old_footer in page: page = page.replace(old_footer, public_footer_html(), 1)
 
-    # Public-site refinement: preserve the hero exactly as designed, while
-    # carrying the admin's black/gold/cream identity through later sections.
     public_style = """
 <style id="bigmug-public-theme">
-/* Hero/home intentionally untouched. */
 #experiences{background:#fffaf5}
 #compare{background:#0f0d0a!important}
 #compare .heading small{color:#f0cf82!important}
@@ -77,8 +72,6 @@ footer{background:#0f0d0a!important}
     if 'id="bigmug-public-theme"' not in page and '</head>' in page:
         page = page.replace('</head>', public_style + '</head>', 1)
 
-    # Public refinements. Enquiry messages are moved to the enquiry section only
-    # when the browser has returned to #enquire; booking messages remain in #book.
     public_script = """
 <script id="bigmug-public-refinements">
 (function(){
@@ -145,7 +138,7 @@ def compact_admin_sections(response):
 #contact-reviews.compact-admin-section{background:#0f0d0a!important;color:#f5ead2!important;border:1px solid #5f481d!important}
 #contact-reviews h2{color:#f0cf82!important}
 #contact-reviews .muted{color:#d5c7ad!important}
-#experiences .compact-admin-body>form label,#products .compact-admin-body>form label,#branding .compact-admin-body>form label,#hero-settings .compact-admin-body>form label,#security .compact-admin-body>form label{color:#fff!important}
+#experiences .compact-admin-body>form label,#products .compact-admin-body>form label,#branding .compact-admin-body>form label,#hero-settings .compact-admin-body>form label,#about-settings .compact-admin-body>form label,#security .compact-admin-body>form label{color:#fff!important}
 #security .compact-admin-body .muted,#security .compact-admin-body form .muted,#security .compact-admin-body p{color:#3b2a1f!important}
 #contact-reviews .compact-admin-body form h3,#contact-reviews .compact-admin-body form label,#contact-reviews .compact-admin-body form .muted{color:#3b2a1f!important}
 .compact-admin-body>a[href="#top"],.compact-admin-body>a[href="#dashboard"],.compact-admin-body>a[href="/admin"],#contact-reviews .compact-admin-body>a{color:#f0cf82!important;text-decoration:none!important;font-weight:600}
@@ -155,7 +148,7 @@ def compact_admin_sections(response):
         script = """
 <script>
 (function(){
-  var ids=['enquiries','experiences','products','hero-settings','branding','contact-reviews','security'];
+  var ids=['enquiries','experiences','products','about-settings','hero-settings','branding','contact-reviews','security'];
   ids.forEach(function(id){
     var sec=document.getElementById(id);
     if(!sec || sec.classList.contains('compact-admin-section')) return;
@@ -170,6 +163,7 @@ def compact_admin_sections(response):
     function setOpen(open){sec.classList.toggle('is-collapsed',!open);toggle.textContent=open?'Close':'Open';toggle.setAttribute('aria-expanded',open?'true':'false');}
     head.addEventListener('click',function(e){if(e.target.closest('a,button,input,select,textarea,label')) return;setOpen(sec.classList.contains('is-collapsed'));});
     toggle.addEventListener('click',function(e){e.stopPropagation();setOpen(sec.classList.contains('is-collapsed'));});
+    if(window.location.hash==='#'+id) setOpen(true);
   });
 })();
 </script>
