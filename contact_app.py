@@ -12,16 +12,33 @@ def public_footer_html():
     whatsapp = timeline.setting('whatsapp_number')
     instagram = timeline.safe_url(timeline.setting('instagram_url'))
     facebook = timeline.safe_url(timeline.setting('facebook_url'))
+    tiktok = timeline.safe_url(timeline.setting('tiktok_url'))
     wa = timeline.whatsapp_href(whatsapp)
-    contact_bits = ["<p>Nairobi, Kenya</p>"]
-    if wa: contact_bits.append(f"<a href='{html.escape(wa)}' target='_blank' rel='noopener'>WhatsApp Big Mug</a>")
-    if email: contact_bits.append(f"<a href='mailto:{html.escape(email)}'>{html.escape(email)}</a>")
-    if len(contact_bits) == 1: contact_bits.append("<p>Bookings and product enquiries available.</p>")
+
+    contact_bits = []
+    for line in timeline.business_address_lines():
+        contact_bits.append(f"<p>{html.escape(line)}</p>")
+    if wa:
+        contact_bits.append(f"<a href='{html.escape(wa)}' target='_blank' rel='noopener'>WhatsApp Big Mug</a>")
+    if email:
+        contact_bits.append(f"<a href='mailto:{html.escape(email)}'>{html.escape(email)}</a>")
+    if not contact_bits:
+        contact_bits.append("<p>Bookings and product enquiries available.</p>")
+
     social_bits = []
-    if instagram: social_bits.append(f"<a href='{html.escape(instagram)}' target='_blank' rel='noopener'>Instagram</a>")
-    if facebook: social_bits.append(f"<a href='{html.escape(facebook)}' target='_blank' rel='noopener'>Facebook</a>")
-    if not social_bits: social_bits.append("<p>Social links coming soon.</p>")
-    return ("<div><b>Contact</b>" + ''.join(contact_bits) + "</div>" "<div><b>Follow Us</b>" + ''.join(social_bits) + "</div>")
+    if instagram:
+        social_bits.append(f"<a href='{html.escape(instagram)}' target='_blank' rel='noopener'>Instagram</a>")
+    if facebook:
+        social_bits.append(f"<a href='{html.escape(facebook)}' target='_blank' rel='noopener'>Facebook</a>")
+    if tiktok:
+        social_bits.append(f"<a href='{html.escape(tiktok)}' target='_blank' rel='noopener'>TikTok</a>")
+    if not social_bits:
+        social_bits.append("<p>Social links coming soon.</p>")
+
+    return (
+        "<div><b>Contact</b>" + ''.join(contact_bits) + "</div>"
+        "<div><b>Follow Us</b>" + ''.join(social_bits) + "</div>"
+    )
 
 
 def enhance_public_home(page):
