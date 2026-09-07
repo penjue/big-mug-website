@@ -135,13 +135,21 @@ def about_admin_enhancements(response):
             page = response.get_data(as_text=True)
             if request.path == '/admin':
                 section = admin_about_html()
-                marker = '<section class="sec" id="hero-settings">'
-                if marker in page:
-                    page = page.replace(marker, section + marker, 1)
-                else:
-                    marker = '<section class="sec" id="branding">'
+                markers = [
+                    "<section class='sec' id='hero-settings'>",
+                    '<section class="sec" id="hero-settings">',
+                    '<section class="sec compact-admin-section" id="branding">',
+                    '<section class="sec" id="branding">',
+                ]
+                inserted = False
+                for marker in markers:
                     if marker in page:
                         page = page.replace(marker, section + marker, 1)
+                        inserted = True
+                        break
+                if not inserted and '</main>' in page:
+                    page = page.replace('</main>', section + '</main>', 1)
+
                 page = page.replace('<a href="#hero-settings">Hero</a>', '<a href="#about-settings">About</a><a href="#hero-settings">Hero</a>', 1)
                 page = page.replace('<a class="q" href="#hero-settings">Hero</a>', '<a class="q" href="#about-settings">About</a><a class="q" href="#hero-settings">Hero</a>', 1)
             elif request.path == '/':
