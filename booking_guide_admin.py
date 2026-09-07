@@ -2,6 +2,9 @@ import html
 from flask import request, redirect, url_for, flash
 import timeline_app as timeline
 
+# Registers editable homepage section heading controls and public rendering.
+import section_headings_admin
+
 app = timeline.app
 base = timeline.base
 
