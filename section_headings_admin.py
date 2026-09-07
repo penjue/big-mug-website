@@ -8,6 +8,8 @@ import contact_icons
 import commerce_admin
 # Enforces the secure payment transaction lifecycle before real providers are connected.
 import payments_phase1
+# Adds secure 50% deposit / full-payment booking controls.
+import booking_payments
 
 app = timeline.app
 base = timeline.base
