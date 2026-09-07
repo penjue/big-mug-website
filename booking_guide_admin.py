@@ -46,8 +46,10 @@ def booking_guide_settings():
 
 def admin_booking_guide_html():
     csrf = html.escape(base.csrf_token())
+
     def v(key):
         return html.escape(value(key))
+
     status = "<p class='muted'>Custom Booking Guide content is active on the public website.</p>" if timeline.setting('booking_guide_custom_active') == '1' else "<p class='muted'>The current public Booking Guide remains unchanged until you save this panel.</p>"
     return f"""
 <section class='sec' id='booking-guide-settings'>
@@ -86,16 +88,19 @@ def public_booking_guide(page):
 
     steps = []
     for i in range(1, 4):
+        step_title = html.escape(value(f'booking_guide_step{i}_title'))
+        step_text = html.escape(value(f'booking_guide_step{i}_text'))
         steps.append(
             f'<div class="step"><div class="step-num">{i}</div>'
-            f'<h3>{html.escape(value(f"booking_guide_step{i}_title"))}</h3>'
-            f'<p>{html.escape(value(f"booking_guide_step{i}_text"))}</p></div>'
+            f'<h3>{step_title}</h3><p>{step_text}</p></div>'
         )
+
+    eyebrow = html.escape(value('booking_guide_eyebrow'))
+    title = html.escape(value('booking_guide_title'))
+    intro = html.escape(value('booking_guide_intro'))
     replacement = (
         '<section id="booking-guide"><div class="container"><div class="heading">'
-        f'<small>{html.escape(value("booking_guide_eyebrow"))}</small>'
-        f'<h2>{html.escape(value("booking_guide_title"))}</h2>'
-        f'<p>{html.escape(value("booking_guide_intro"))}</p>'
+        f'<small>{eyebrow}</small><h2>{title}</h2><p>{intro}</p>'
         '</div><div class="steps">' + ''.join(steps) + '</div></div></section>\n'
     )
     return page[:start] + replacement + page[next_section:]
